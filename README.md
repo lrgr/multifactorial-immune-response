@@ -1,15 +1,27 @@
-# Multifactorial immune response
+
+# A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor
+
+This repository contains the source code for reproducing the experiments and figures from Leiserson, et al. (bioRxiv, 2017). See the [references section](https://github.com/lrgr/multifactorial-immune-response#references) below for more information on the paper.
 
 ### Setup
 
 #### Dependencies
-The methods and experiments are written in Python 3. We recommend using Conda to manage dependencies. The `environment.yml` file includes the dependencies, which you can install with:
+The methods and experiments are written in Python 3. We recommend using Conda to manage dependencies, which you can do directly using the provided `environment.yml` file:
 
     conda env create -f environment.yml
-    source activate multifactorial-immune-response-env
+    source activate hierarchical-hmm-env
 
-#### Data
-Run `snakemake all` to download and process datasets used in our experiments.
+### Usage
+
+We use [`snakemake`](https://snakemake.readthedocs.io/en/latest/) to run a pipeline of commands to download and process data, run experiments, and create the figures. To run the entire pipeline, simply run:
+
+    snakemake all
+
+### Support
+
+Please report bugs and feature requests in the [Issues tab](https://github.com/lrgr/multifactorial-immune-response/issues) of this GitHub repository.
+
+For further questions, please email [Max Leiserson](mailto:mdml@cs.umd.edu) and [Lester Mackey](mailto:lmackey@microsoft.com) directly.
 
 ### References
 
