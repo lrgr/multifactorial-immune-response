@@ -1,0 +1,15 @@
+name: 'multifactorial-immune-response-env'
+channels:
+  - defaults
+  - bioconda
+  - sebp
+dependencies:
+  - numpy
+  - scikit-learn
+  - scipy
+  - matplotlib
+  - pandas
+  - seaborn
+  - snakemake
+  - scikit-survival
+  - xlrd

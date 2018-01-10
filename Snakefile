@@ -1,0 +1,131 @@
+from os.path import join
+configfile: 'config.yml'
+
+################################################################################
+# SETTINGS, FILES, AND DIRECTORIES
+################################################################################
+# Directories
+DATA_DIR = 'data'
+RAW_DATA_DIR = join(DATA_DIR, 'raw')
+OUTPUT_DIR = 'output'
+FIGURES_DIR = join(OUTPUT_DIR, 'figs')
+
+# Data files
+SNYDER_COUNTS   = join(RAW_DATA_DIR, 'snyder_et_al_data_counts.csv')
+SNYDER_CLINICAL = join(RAW_DATA_DIR, 'snyder_et_al_data_clinical.csv')
+SNYDER_TCR      = join(RAW_DATA_DIR, 'snyder_et_al_data_tcr.csv')
+SNYDER_TCR_EXPANSION_AB = join(RAW_DATA_DIR, 'snyder_et_al_data_tcr_expansion_a_b.csv')
+SNYDER_TCR_EXPANSION_AC = join(RAW_DATA_DIR, 'snyder_et_al_data_tcr_expansion_a_c.csv')
+SNYDER_FEATURE_CLASSES = join(DATA_DIR, 'snyder_et_al_feature_classes.xlsx')
+
+PROCESSED_DATA_PREFIX = join(DATA_DIR, 'snyder_et_al_processed_data')
+PROCESSED_FEATURES = PROCESSED_DATA_PREFIX + '-features.tsv'
+PROCESSED_ALL_FEATURES = PROCESSED_DATA_PREFIX + '-all-features.tsv'
+PROCESSED_OUTCOMES = PROCESSED_DATA_PREFIX + '-outcomes.tsv'
+PROCESSED_FEATURE_CLASSES = PROCESSED_DATA_PREFIX + '-feature-classes.tsv'
+
+# Output files
+MODEL_OUTPUT_PREFIX = join(OUTPUT_DIR, 'trained-elasticnet')
+MODEL_RESULTS = MODEL_OUTPUT_PREFIX + '-results.json'
+MODEL_COEFFICIENTS = MODEL_OUTPUT_PREFIX + '-coefficients.tsv'
+
+BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, 'biomarker-dcb-plot-data.json')
+PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, 'elasticnet-permutation-test-results.json')
+
+# Plots
+FIGS_PREFIX = join(FIGURES_DIR, 'fig')
+FIG1 = '%s1.%s' % (FIGS_PREFIX, config['figure_format']))
+FIG2 = '%s2.%s' % (FIGS_PREFIX, config['figure_format']))
+FIG3 = '%s3.%s' % (FIGS_PREFIX, config['figure_format']))
+
+################################################################################
+# RULES
+################################################################################
+# Data processing and download
+rule download_data:
+    params:
+        url='https://raw.githubusercontent.com/hammerlab/multi-omic-urothelial-anti-pdl1/master/data_{datatype}.csv'
+    output:
+        join(RAW_DATA_DIR, 'snyder_et_al_data_{datatype}.csv')
+    shell:
+        'wget -O {output} {params.url}'
+
+rule process_data:
+    input:
+        counts=SNYDER_COUNTS,
+        clinical=SNYDER_CLINICAL,
+        tcr=SNYDER_TCR,
+        expansion_ab=SNYDER_TCR_EXPANSION_AB,
+        expansion_ac=SNYDER_TCR_EXPANSION_AC,
+        feature_classes=SNYDER_FEATURE_CLASSES
+    output:
+        PROCESSED_FEATURES,
+        PROCESSED_OUTCOMES,
+        PROCESSED_FEATURE_CLASSES,
+        PROCESSED_ALL_FEATURES
+    shell:
+        'python construct_dataset.py -cof {input.counts} -clf {input.clinical} '\
+        '-fcf {input.feature_classes} -tf {input.tcr} -ef {input.expansion_ab} '\
+        '{input.expansion_ac} -op {PROCESSED_DATA_PREFIX}'
+
+# Train model
+rule train_model:
+    input:
+        features=PROCESSED_FEATURES,
+        outcomes=PROCESSED_OUTCOMES,
+        feature_classes=PROCESSED_FEATURE_CLASSES
+    threads: config['n_jobs']
+    output:
+        MODEL_COEFFICIENTS,
+        MODEL_RESULTS
+    shell:
+        'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
+        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX}'
+
+# Do follow up analysis
+rule biomarkers_and_dcb:
+    input:
+        features=PROCESSED_ALL_FEATURES,
+        results=MODEL_RESULTS
+    output:
+        BIOMARKER_DCB_PLOT_OUTPUT
+    shell:
+        'python associate_biomarkers_with_dcb.py -ff {input.features} -rf {input.results} -o {output}'
+
+rule permutation_test:
+    input:
+        features=PROCESSED_FEATURES,
+        outcomes=PROCESSED_OUTCOMES,
+        feature_classes=PROCESSED_FEATURE_CLASSES
+    params:
+        n_permutations=config['n_permutations'],
+        random_seed=config['random_seed'],
+        n_jobs=config['n_jobs']
+    threads: config['n_jobs']
+    output:
+        PERMUTATION_TEST_RESULTS
+    shell:
+        'python permutation_test.py -ff {input.features} -fcf {input.feature_classes} '\
+        '-of {input.outcomes} -o {output} -np {params.n_permutations} '\
+        '-nj {params.n_jobs} -rs {params.random_seed}'
+
+# Make plots
+rule plot:
+    input:
+        biomarkers=BIOMARKER_DCB_PLOT_OUTPUT,
+        results=MODEL_RESULTS,
+        permutation_test_results=PERMUTATION_TEST_RESULTS
+    output:
+        FIG1,
+        FIG2,
+        FIG3
+    shell:
+        'python plot_figures.py -bf {input.biomarkers} -rf {input.results} '\
+        '-prf {input.permutation_test_results} -o '
+
+# General
+rule all:
+    input:
+        FIG1,
+        FIG2,
+        FIG3

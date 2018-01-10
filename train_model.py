@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+
+################################################################################
+# SETUP
+################################################################################
+# Load required modules
+import sys, os, argparse, logging, pandas as pd, numpy as np, json
+from sklearn.model_selection import *
+
+# Load our modules
+from models import pipeline, estimator, param_grid
+from i_o import getLogger
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-ff', '--feature_file', type=str, required=True)
+parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
+parser.add_argument('-of', '--outcome_file', type=str, required=True)
+parser.add_argument('-op', '--output_prefix', type=str, required=True)
+parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
+parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
+parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
+    default=['Clinical','Tumor','Blood'])
+args = parser.parse_args(sys.argv[1:])
+
+# Set up logger
+logger = getLogger(args.verbosity)
+
+# Load the input data
+X = pd.read_csv(args.feature_file, index_col=0, sep='\t')
+y = pd.read_csv(args.outcome_file, index_col=0, sep='\t')
+feature_classes = pd.read_csv(args.feature_class_file, index_col=0, sep='\t')
+
+# Align the features and outcomes
+patients = X.index
+X = X.reindex(index = patients)
+y = y.reindex(index = patients)
+outcome_name = y.columns[0]
+
+# Create some data structures to hold our output
+json_output = dict(patients=patients.tolist())
+
+################################################################################
+# TRAIN A MODEL ON ALL THE DATA
+################################################################################
+# Choose which feature classes to use in training;
+# to use all feature classes set training_classes = ['Clinical','Tumor','Blood']
+training_cols = feature_classes['Class'].isin(args.training_classes).index.tolist()
+
+# Set up nested validation for parameter selection and eventual evaluation
+# Define parameter selection protocol
+if param_grid is not None:
+    # Perform parameter selection using inner loop of CV
+    inner_cv = LeaveOneOut()
+    gscv = GridSearchCV(estimator=pipeline, param_grid=param_grid,
+                        cv=inner_cv,
+                        scoring = 'neg_mean_squared_error')
+else:
+    # No parameter selection required
+    gscv = pipeline
+
+# Produce held-out predictions for parameter-selected model
+# using outer loop of CV
+outer_cv = LeaveOneOut()
+preds = pd.Series(cross_val_predict(estimator = gscv,
+                                   X=X.loc[:,training_cols],
+                                    y=y[outcome_name], cv=outer_cv,
+                                    n_jobs = args.n_jobs),
+                 index = patients)
+
+# Visualize and asses held-out predictions
+# 1) Subset predictions and ground truth to relevant indices
+sub_preds = preds.loc[patients].values
+sub_y = y.loc[patients][outcome_name].values
+min_val = min(sub_preds.min(), sub_y.min())
+max_val = max(sub_preds.max(), sub_y.max())
+
+# 2) Compare held-out RMSE to baseline RMSE obtained by predicting mean
+baseline_sqd_err = (y[outcome_name] - y[outcome_name].mean())**2
+pred_sqd_err = (sub_y-sub_preds)**2
+logger.info('[Held-out RMSE, Baseline RMSE]: {}'.format([np.sqrt(pred_sqd_err.mean()),
+                                                   np.sqrt(baseline_sqd_err.mean())]))
+logger.info('[Held-out MSE, Baseline MSE]: {}'.format([pred_sqd_err.mean(), baseline_sqd_err.mean()]))
+logger.info('[Held-out MAE, Baseline MAE]: {}'.format([np.sqrt(pred_sqd_err).mean(),
+                                                 np.sqrt(baseline_sqd_err).mean()]))
+variance_explained = 1 - pred_sqd_err.mean()/baseline_sqd_err.mean()
+logger.info('Variance explained: {}'.format(variance_explained))
+
+# 3) Record the data into our plots dictionary
+json_output['ExpandedClones'] = {
+    "preds": sub_preds.tolist(),
+    "true": sub_y.tolist(),
+    "variance_explained": variance_explained,
+    "rmse": {
+        "baseline": np.sqrt(baseline_sqd_err.mean()),
+        "held-out": np.sqrt(pred_sqd_err.mean())
+    },
+    "mse": {
+        "baseline": baseline_sqd_err.mean(),
+        "held-out": pred_sqd_err.mean()
+    },
+    "mae": {
+        "baseline": np.sqrt(baseline_sqd_err).mean(),
+        "held-out": np.sqrt(pred_sqd_err).mean()
+    }
+}
+
+################################################################################
+# EVALUATE FEATURE IMPORTANCE
+################################################################################
+# Train each model on full dataset
+model = pipeline.fit(X.loc[:,training_cols], y[outcome_name])
+
+# Examine variable importance or coefficients in each model.
+# Weight raw variable coefficients by associated variable standard deviations;
+# this places all variables on the same scale.
+logger.info('ElasticNet coefficients')
+variable_scores = model.named_steps['estimator'].coef_ * X.loc[:,training_cols].fillna(X.loc[:,training_cols].median()).std()
+variable_scores = pd.Series(variable_scores, index = X.loc[:, training_cols].columns, name='score')
+
+# Associate feature classes with scores
+variable_scores = pd.concat([variable_scores, feature_classes], axis = 1)
+
+# Sort scores by importance magnitude
+variable_scores = variable_scores.reindex(variable_scores['score'].abs().sort_values(ascending=False).index)
+logger.info('----------------------')
+logger.info(variable_scores.to_string())
+logger.info('')
+
+# Record the data into our plots dictionary
+json_output['VariableImportance'] = variable_scores.to_dict()
+
+################################################################################
+# OUTPUT TO FILE
+################################################################################
+# Output plot data to JSON
+with open(args.output_prefix + '-results.json', 'w') as OUT:
+    json.dump( json_output, OUT )
+
+# Output results summary to TSV
+variable_scores.to_csv(args.output_prefix + '-coefficients.tsv', sep='\t', index=False)
