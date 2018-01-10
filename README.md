@@ -1,5 +1,5 @@
-
 # A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor
+<img src='https://travis-ci.org/lrgr/multifactorial-immune-response.svg?branch=master'>
 
 This repository contains the source code for reproducing the experiments and figures from Leiserson, et al. (bioRxiv, 2017). See the [references section](https://github.com/lrgr/multifactorial-immune-response#references) below for more information on the paper.
 
