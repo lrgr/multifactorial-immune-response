@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # Load required modules
+import matplotlib
+matplotlib.use('agg')
 import sys, os, argparse, json, matplotlib.pyplot as plt, seaborn as sns, pandas as pd, numpy as np
 import matplotlib.patches as mpatches
 sns.set_style('whitegrid')
@@ -126,8 +128,9 @@ ordered_biomarkers = ['Predicted expanded TIL clones', 'Missense SNV count', 'Ex
 g = sns.FacetGrid(biomarker_df, col="Biomarker", sharex=True, sharey=False,
                 col_wrap=2, col_order=ordered_biomarkers)
 g = g.map(sns.boxplot, "Progression-free survival", "Biomarker value",
-    palette=sns.color_palette()[:2], width=0.4)
-g = g.map(sns.swarmplot, "Progression-free survival", "Biomarker value", color="0.25")
+    palette=sns.color_palette()[:2], width=0.4, order=['≤ 6 months', '> 6 months'])
+g = g.map(sns.swarmplot, "Progression-free survival", "Biomarker value",
+          order=['≤ 6 months', '> 6 months'], color="0.25")
 
 # Custom y-axis for PD-L1 expression plot
 g.axes[-1].set_yticks((0, 1, 2))
