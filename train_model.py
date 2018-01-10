@@ -116,19 +116,16 @@ model = pipeline.fit(X.loc[:,training_cols], y[outcome_name])
 # this places all variables on the same scale.
 logger.info('ElasticNet coefficients')
 variable_scores = model.named_steps['estimator'].coef_ * X.loc[:,training_cols].fillna(X.loc[:,training_cols].median()).std()
-variable_scores = pd.Series(variable_scores, index = X.loc[:, training_cols].columns, name='score')
+variable_scores = pd.Series(variable_scores, index = X.loc[:, training_cols].columns, name='Score')
 
 # Associate feature classes with scores
 variable_scores = pd.concat([variable_scores, feature_classes], axis = 1)
 
 # Sort scores by importance magnitude
-variable_scores = variable_scores.reindex(variable_scores['score'].abs().sort_values(ascending=False).index)
+variable_scores = variable_scores.reindex(variable_scores['Score'].abs().sort_values(ascending=False).index)
 logger.info('----------------------')
 logger.info(variable_scores.to_string())
 logger.info('')
-
-# Record the data into our plots dictionary
-json_output['VariableImportance'] = variable_scores.to_dict()
 
 ################################################################################
 # OUTPUT TO FILE
@@ -138,4 +135,4 @@ with open(args.output_prefix + '-results.json', 'w') as OUT:
     json.dump( json_output, OUT )
 
 # Output results summary to TSV
-variable_scores.to_csv(args.output_prefix + '-coefficients.tsv', sep='\t', index=False)
+variable_scores.to_csv(args.output_prefix + '-coefficients.tsv', sep='\t', index=True)

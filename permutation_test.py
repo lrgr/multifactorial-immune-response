@@ -13,11 +13,12 @@ from i_o import getLogger
 parser = argparse.ArgumentParser()
 parser.add_argument('-ff', '--feature_file', type=str, required=True)
 parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
-parser.add_argument('-of', '--outcome_file', type=str, required=True)
-parser.add_argument('-op', '--output_file', type=str, required=True)
+parser.add_argument('-ocf', '--outcome_file', type=str, required=True)
+parser.add_argument('-of', '--output_file', type=str, required=True)
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-rs', '--random_seed', type=int, default=12345, required=False)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
+parser.add_argument('-np', '--n_permutations', type=int, default=10, required=False)
 parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
     default=['Clinical','Tumor','Blood'])
 args = parser.parse_args(sys.argv[1:])
@@ -53,9 +54,10 @@ else:
     gscv = pipeline
 
 # Convert dataframes to matrices to avoid dataframe splitting error
+outer_cv = LeaveOneOut()
 score, permutation_scores, pvalue = permutation_test_score(estimator = gscv,
-    X=X.loc[:,training_cols].as_matrix(), y=y.as_matrix(), cv=outer_cv,
-    n_permutations=n_permutations, n_jobs=args.n_jobs,
+    X=X.loc[:,training_cols].as_matrix(), y=y[outcome_name].as_matrix(),
+    cv=outer_cv, n_permutations=args.n_permutations, n_jobs=args.n_jobs,
     random_state=args.random_seed, verbose=3,
     scoring = 'neg_mean_squared_error')
 
@@ -63,6 +65,7 @@ score, permutation_scores, pvalue = permutation_test_score(estimator = gscv,
 # OUTPUT TO FILE
 ################################################################################
 with open(args.output_file, 'w') as OUT:
-    output = dict(permutation_scores=permutation_scores, true_score=score,
-                  n_permutations=n_permutations, pvalue=pvalue, params=vars(args))
+    output = dict(permutation_scores=permutation_scores.tolist(),
+                  true_score=score, n_permutations=args.n_permutations,
+                  pvalue=pvalue, params=vars(args))
     json.dump( output, OUT )

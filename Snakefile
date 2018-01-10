@@ -34,9 +34,9 @@ PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, 'elasticnet-permutation-test-results
 
 # Plots
 FIGS_PREFIX = join(FIGURES_DIR, 'fig')
-FIG1 = '%s1.%s' % (FIGS_PREFIX, config['figure_format']))
-FIG2 = '%s2.%s' % (FIGS_PREFIX, config['figure_format']))
-FIG3 = '%s3.%s' % (FIGS_PREFIX, config['figure_format']))
+FIG1 = '%s1.%s' % (FIGS_PREFIX, config['figure_format'])
+FIG2 = '%s2.%s' % (FIGS_PREFIX, config['figure_format'])
+FIG3 = '%s3.%s' % (FIGS_PREFIX, config['figure_format'])
 
 ################################################################################
 # RULES
@@ -106,7 +106,7 @@ rule permutation_test:
         PERMUTATION_TEST_RESULTS
     shell:
         'python permutation_test.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-of {input.outcomes} -o {output} -np {params.n_permutations} '\
+        '-ocf {input.outcomes} -of {output} -np {params.n_permutations} '\
         '-nj {params.n_jobs} -rs {params.random_seed}'
 
 # Make plots
@@ -114,14 +114,18 @@ rule plot:
     input:
         biomarkers=BIOMARKER_DCB_PLOT_OUTPUT,
         results=MODEL_RESULTS,
-        permutation_test_results=PERMUTATION_TEST_RESULTS
+        permutation_test_results=PERMUTATION_TEST_RESULTS,
+        coefficients=MODEL_COEFFICIENTS
+    params:
+        ext=config['figure_format']
     output:
         FIG1,
         FIG2,
         FIG3
     shell:
         'python plot_figures.py -bf {input.biomarkers} -rf {input.results} '\
-        '-prf {input.permutation_test_results} -o '
+        '-prf {input.permutation_test_results} -cf {input.coefficients} '\
+        '-o {FIGS_PREFIX} -e {params.ext}'
 
 # General
 rule all:

@@ -143,6 +143,7 @@ logger.info('- %s patients (%s with missing outcomes removed )' % (X.shape[0], l
 logger.info('- %s features' % X.shape[1])
 
 # Output data to file
+df = df.set_index('patient_id')
 df.to_csv(args.output_prefix + '-all-features.tsv', sep='\t', index=True)
 X.to_csv(args.output_prefix + '-features.tsv', sep='\t', index=True)
 y.to_csv(args.output_prefix + '-outcomes.tsv', sep='\t', index=True)

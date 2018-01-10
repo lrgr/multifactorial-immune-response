@@ -7,13 +7,25 @@ sns.set_style('whitegrid')
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input_file', type=str, required=True)
+parser.add_argument('-bf', '--biomarkers_file', type=str, required=True)
+parser.add_argument('-rf', '--results_file', type=str, required=True)
+parser.add_argument('-cf', '--coefficients_file', type=str, required=True)
+parser.add_argument('-prf', '--permuted_results_file', type=str, required=True)
 parser.add_argument('-o', '--output_prefix', type=str, required=True)
+parser.add_argument('-e', '--extension', type=str, required=False, default='pdf')
 args = parser.parse_args(sys.argv[1:])
 
 # Load the input file
-with open(args.input_file, 'r') as IN:
-    plot_data = json.load(IN)
+with open(args.biomarkers_file, 'r') as IN:
+    biomarker_plot_items = json.load(IN)['Biomarkers']
+
+with open(args.results_file, 'r') as IN:
+    results = json.load(IN)
+
+with open(args.permuted_results_file, 'r') as IN:
+    permuted_results = json.load(IN)
+
+var_importance = pd.read_csv(args.coefficients_file, sep='\t')
 
 ###############################################################################
 # FIGURE 1
@@ -22,9 +34,9 @@ fig1, (ax1, ax2) = plt.subplots(1, 2)
 fig1.set_size_inches(10, 5)
 
 # Expanded clones (predicted vs. true)
-pred = np.array(plot_data['ExpandedClones']['x'])
-true = np.array(plot_data['ExpandedClones']['y'])
-variance_explained = plot_data['ExpandedClones']['variance_explained']
+pred = np.array(results['ExpandedClones']['preds'])
+true = np.array(results['ExpandedClones']['true'])
+variance_explained = results['ExpandedClones']['variance_explained']
 ax1.scatter(pred, true)
 min_val = min(pred.min(),true.min())
 max_val = max(pred.max(),true.max())
@@ -36,9 +48,9 @@ ax1.text(0.01, 0.95, 'Variance explained: %.2f%%' % (variance_explained*100.),
 ax1.set_title('(a)', fontsize=16)
 
 # Permutation scores
-permutation_scores = -1*np.array(plot_data['PermutationTest']['permutation_scores'])
-true_score = -1*plot_data['PermutationTest']['true_score']
-pvalue = plot_data['PermutationTest']['pvalue']
+permutation_scores = -1*np.array(permuted_results['permutation_scores'])
+true_score = -1*permuted_results['true_score']
+pvalue = permuted_results['pvalue']
 
 ax2.hist(permutation_scores, 20,
          label='Permuted (Monte \nCarlo $p < %.1g$)' % pvalue,
@@ -53,17 +65,15 @@ ax2.set_title('(b)', fontsize=16)
 
 # Save to file and clear
 plt.tight_layout()
-plt.savefig(args.output_prefix + '-fig1.pdf')
-plt.savefig(args.output_prefix + '-fig1.png')
+plt.savefig('%s1.%s' % (args.output_prefix, args.extension))
 plt.clf()
 
 ###############################################################################
 # FIGURE 2
 ###############################################################################
 # Plot the variable importances (coloring by Class)
-var_importance = pd.DataFrame(plot_data['VariableImportance'])
 var_importance = var_importance.reset_index()
-var_importance = var_importance.rename(index=str, columns={"index": "Feature", "score": "Learned coefficient"})
+var_importance = var_importance.rename(index=str, columns={"#Feature name": "Feature", "Score": "Learned coefficient"})
 var_importance['Class'] = var_importance['Class'].map({'Blood': 'Circulating', 'Tumor': 'Tumor', 'Clinical': 'Clinical'})
 
 #
@@ -86,8 +96,7 @@ plt.legend(handles=patches, fontsize=14)
 
 # Output to file
 plt.subplots_adjust(left=0.25, right=0.95, top=0.95)
-plt.savefig(args.output_prefix + '-fig2.pdf')
-plt.savefig(args.output_prefix + '-fig2.png')
+plt.savefig('%s2.%s' % (args.output_prefix, args.extension))
 plt.clf()
 sns.set(font_scale=1, style='whitegrid')
 
@@ -102,7 +111,6 @@ biomarker_nice_names = {
     "Predicted N Expanded Clones that were TILs A->B": "Predicted expanded TIL clones",
     "N Expanded Clones that were TILs A->B": "Expanded TIL clones"
 }
-biomarker_plot_items = plot_data['Biomarkers']
 for item in biomarker_plot_items:
     item['Progression-free survival'] = '> 6 months' if item['Benefit'] else '≤ 6 months'
     item['Biomarker'] = biomarker_nice_names[item['Biomarker']]
@@ -132,5 +140,4 @@ for biomarker, ax, letter in zip(ordered_biomarkers, g.axes, 'abcd'):
 
 # Show the plot
 plt.tight_layout()
-plt.savefig(args.output_prefix + '-fig3.pdf')
-plt.savefig(args.output_prefix + '-fig3.png')
+plt.savefig('%s3.%s' % (args.output_prefix, args.extension))

@@ -22,11 +22,12 @@ logger = getLogger(args.verbosity)
 # EXAMINE THE ASSOCIATION BETWEEN PREDICTIONS AND DCB
 ################################################################################
 # Load the input files
-df = pd.read_csv(args.feature_file, sep='\t', index_col=0)
 with open(args.results_file, 'r') as IN:
     results = json.load(IN)
     patients = results['patients']
     preds = results['ExpandedClones']['preds']
+
+df = pd.read_csv(args.feature_file, sep='\t', index_col=0)
 
 # Index and exponentiate predictions so they can be merged with the dataframe
 exp_preds = pd.DataFrame(np.exp(pd.Series(preds, index=patients,

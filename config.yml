@@ -1,4 +1,4 @@
-n_permutations: 10
+n_permutations: 1
 random_seed: 12345
 n_jobs: 4
 figure_format: 'pdf'
