@@ -46,11 +46,11 @@ Mark DM Leiserson, Vasilis Syrgkanis, Amy Gilson, Miroslav Dudik, Samuel Funt, A
 
 ### Figures
 
-<img src='http://multifactorial-immune-response.lrgr.io/fig1.png' style='width:300px'>
+<img src='http://multifactorial-immune-response.lrgr.io/fig1.png'>
 
 **Figure 1**: (a) Predicted log TIL expansion versus ground-truth log TIL expansion for patients held out using LOOCV.  Predictions are formed using the elastic net. (b) Histogram of LOOCV error when patient responses are permuted uniformly at random 1000 times.  The overlaid dotted line displays the LOOCV error obtained on the original dataset.
 
- <img src='http://multifactorial-immune-response.lrgr.io/fig2.png?raw=true' style='width:300px'>
+ <img src='http://multifactorial-immune-response.lrgr.io/fig2.png?raw=true'>
 
 **Figure 2**: Learned elastic net coefficients and feature types.
 
