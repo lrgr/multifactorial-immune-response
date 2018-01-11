@@ -32,9 +32,13 @@ df = pd.read_csv(args.feature_file, sep='\t', index_col=0)
 # Index and exponentiate predictions so they can be merged with the dataframe
 exp_preds = pd.DataFrame(np.exp(pd.Series(preds, index=patients,
                         name='Predicted N Expanded Clones that were TILs A->B')))
+patients_with_preds = set(exp_preds.index)
+all_patients = set(df.index)
+patients_missing_preds = all_patients-patients_with_preds
 
 # Add predictions to the dataframe
 df = pd.merge(df, exp_preds, how='outer',left_index=True, right_index=True)
+df = df.drop(patients_missing_preds)
 
 # Plot biomarker association with DCB for various biomarkers
 biomarkers = ['N Expanded Clones that were TILs A->B',
