@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('agg')
 import sys, os, argparse, json, matplotlib.pyplot as plt, seaborn as sns, pandas as pd, numpy as np
 import matplotlib.patches as mpatches
+from models import EN, RF, IMPORTANCE_NAMES
 sns.set_style('whitegrid')
 
 # Parse command-line arguments
@@ -23,6 +24,7 @@ with open(args.biomarkers_file, 'r') as IN:
 
 with open(args.results_file, 'r') as IN:
     results = json.load(IN)
+    model = results['params']['model']
 
 with open(args.permuted_results_file, 'r') as IN:
     permuted_results = json.load(IN)
@@ -75,20 +77,21 @@ plt.clf()
 ###############################################################################
 # Plot the variable importances (coloring by Class)
 var_importance = var_importance.reset_index()
-var_importance = var_importance.rename(index=str, columns={"#Feature name": "Feature", "Score": "Learned coefficient"})
+var_importance_name = IMPORTANCE_NAMES[model]
+var_importance = var_importance.rename(index=str, columns={"#Feature name": "Feature", "Score": var_importance_name})
 var_importance['Class'] = var_importance['Class'].map({'Blood': 'Circulating', 'Tumor': 'Tumor', 'Clinical': 'Clinical'})
 
 #
 classToColor = dict(zip(['Tumor', 'Circulating', 'Clinical'], sns.color_palette()[:3]))
-featureToImportance = dict(zip(var_importance['Feature'], var_importance['Learned coefficient']))
+featureToImportance = dict(zip(var_importance['Feature'], var_importance[var_importance_name]))
 featureToClass = dict(zip(var_importance['Feature'], var_importance['Class']))
 
 features = sorted(var_importance['Feature'], key=lambda f: abs(featureToImportance[f]), reverse=True)
 classes = [ featureToClass[f] for f in features ]
 palette = [ classToColor[c] for c in classes ]
 sns.set(font_scale=0.8, style='whitegrid')  # smaller
-ax = sns.barplot(x="Learned coefficient", y="Feature", data=var_importance,
-           label="Learned coefficient", palette=palette, order=features)
+ax = sns.barplot(x=var_importance_name, y="Feature", data=var_importance,
+           label=var_importance_name, palette=palette, order=features)
 ax.set_xlabel(ax.get_xlabel(), fontsize=16)
 ax.set_ylabel(ax.get_ylabel(), fontsize=16)
 

@@ -8,7 +8,7 @@ import sys, os, argparse, logging, pandas as pd, numpy as np, json
 from sklearn.model_selection import *
 
 # Load our modules
-from models import pipeline, estimator, param_grid
+from models import EN, RF, MODEL_NAMES, PIPELINES, PARAM_GRIDS
 from i_o import getLogger
 
 # Parse command-line arguments
@@ -17,6 +17,7 @@ parser.add_argument('-ff', '--feature_file', type=str, required=True)
 parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
 parser.add_argument('-of', '--outcome_file', type=str, required=True)
 parser.add_argument('-op', '--output_prefix', type=str, required=True)
+parser.add_argument('-m', '--model', type=str, required=True, choices=MODEL_NAMES)
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
 parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
@@ -38,7 +39,7 @@ y = y.reindex(index = patients)
 outcome_name = y.columns[0]
 
 # Create some data structures to hold our output
-json_output = dict(patients=patients.tolist())
+json_output = dict(patients=patients.tolist(), params=vars(args))
 
 ################################################################################
 # TRAIN A MODEL ON ALL THE DATA
@@ -49,6 +50,8 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 
 # Set up nested validation for parameter selection and eventual evaluation
 # Define parameter selection protocol
+pipeline = PIPELINES[args.model]
+param_grid = PARAM_GRIDS[args.model]
 if param_grid is not None:
     # Perform parameter selection using inner loop of CV
     inner_cv = LeaveOneOut()
@@ -115,7 +118,12 @@ model = pipeline.fit(X.loc[:,training_cols], y[outcome_name])
 # Weight raw variable coefficients by associated variable standard deviations;
 # this places all variables on the same scale.
 logger.info('ElasticNet coefficients')
-variable_scores = model.named_steps['estimator'].coef_ * X.loc[:,training_cols].fillna(X.loc[:,training_cols].median()).std()
+if args.model == RF:
+    variable_scores = model.named_steps['estimator'].feature_importances_
+elif args.model == EN:
+    variable_scores = model.named_steps['estimator'].coef_ * X.loc[:,training_cols].fillna(X.loc[:,training_cols].median()).std()
+else:
+    raise NotImplementedError('Model "%s" not implemented.' % args.model)
 variable_scores = pd.Series(variable_scores, index = X.loc[:, training_cols].columns, name='Score')
 
 # Associate feature classes with scores

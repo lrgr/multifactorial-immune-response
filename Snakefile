@@ -7,7 +7,7 @@ configfile: 'config.yml'
 # Directories
 DATA_DIR = 'data'
 RAW_DATA_DIR = join(DATA_DIR, 'raw')
-OUTPUT_DIR = 'output'
+OUTPUT_DIR = 'output/%s' % config['model']
 FIGURES_DIR = join(OUTPUT_DIR, 'figs')
 
 # Data files
@@ -25,12 +25,12 @@ PROCESSED_OUTCOMES = PROCESSED_DATA_PREFIX + '-outcomes.tsv'
 PROCESSED_FEATURE_CLASSES = PROCESSED_DATA_PREFIX + '-feature-classes.tsv'
 
 # Output files
-MODEL_OUTPUT_PREFIX = join(OUTPUT_DIR, 'trained-elasticnet')
+MODEL_OUTPUT_PREFIX = join(OUTPUT_DIR, '%s-trained' % config['model'])
 MODEL_RESULTS = MODEL_OUTPUT_PREFIX + '-results.json'
 MODEL_COEFFICIENTS = MODEL_OUTPUT_PREFIX + '-coefficients.tsv'
 
-BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, 'biomarker-dcb-plot-data.json')
-PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, 'elasticnet-permutation-test-results.json')
+BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, '%s-biomarker-dcb-plot-data.json' % config['model'])
+PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, '%s-permutation-test-results.json' % config['model'])
 
 # Plots
 FIGS_PREFIX = join(FIGURES_DIR, 'fig')
@@ -74,13 +74,15 @@ rule train_model:
         features=PROCESSED_FEATURES,
         outcomes=PROCESSED_OUTCOMES,
         feature_classes=PROCESSED_FEATURE_CLASSES
+    params:
+        model=config['model']
     threads: config['n_jobs']
     output:
         MODEL_COEFFICIENTS,
         MODEL_RESULTS
     shell:
         'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX}'
+        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:
@@ -100,14 +102,15 @@ rule permutation_test:
     params:
         n_permutations=config['n_permutations'],
         random_seed=config['random_seed'],
-        n_jobs=config['n_jobs']
+        n_jobs=config['n_jobs'],
+        model=config['model']
     threads: config['n_jobs']
     output:
         PERMUTATION_TEST_RESULTS
     shell:
         'python permutation_test.py -ff {input.features} -fcf {input.feature_classes} '\
         '-ocf {input.outcomes} -of {output} -np {params.n_permutations} '\
-        '-nj {params.n_jobs} -rs {params.random_seed}'
+        '-nj {params.n_jobs} -rs {params.random_seed} -m {params.model}'
 
 # Make plots
 rule plot:

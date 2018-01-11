@@ -1,3 +1,4 @@
+
 # A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor
 <img src='https://travis-ci.org/lrgr/multifactorial-immune-response.svg?branch=master'>
 
@@ -18,6 +19,19 @@ The methods and experiments are written in Python 3. We recommend using Conda to
 We use [`snakemake`](https://snakemake.readthedocs.io/en/latest/) to run a pipeline of commands to download and process data, run experiments, and create the figures. To run the entire pipeline, simply run:
 
     snakemake all
+
+#### Configuration
+
+Configuration for the entire pipeline is controlled by the variables in `config.yml`. The following variables can be set:
+
+|Variable name      | Choices                | Default   |
+|-------------------|------------------------|-----------|
+| `model`           | `'en'`, `'rf'`         | `'en'`    |
+| `n_permutations`  | Positive int           | 1         |
+| `random_seed`     | Positive int           | 12345     |
+| `n_jobs`          | Positive int           | 4         |
+| `figure_format`   | Standard image formats | png       |
+
 
 ### Support
 

@@ -5,7 +5,7 @@
 ################################################################################
 # Load required modules
 import sys, os, argparse, logging, pandas as pd, numpy as np, json
-from models import pipeline, estimator, param_grid
+from models import RF, EN, PIPELINES, PARAM_GRIDS, MODEL_NAMES
 from sklearn.model_selection import *
 from i_o import getLogger
 
@@ -15,6 +15,7 @@ parser.add_argument('-ff', '--feature_file', type=str, required=True)
 parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
 parser.add_argument('-ocf', '--outcome_file', type=str, required=True)
 parser.add_argument('-of', '--output_file', type=str, required=True)
+parser.add_argument('-m', '--model', type=str, required=True, choices=MODEL_NAMES)
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-rs', '--random_seed', type=int, default=12345, required=False)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
@@ -43,6 +44,9 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 ################################################################################
 # RUN PERMUTATION TEST
 ################################################################################
+pipeline = PIPELINES[args.model]
+param_grid = PARAM_GRIDS[args.model]
+
 # Conduct a permutation test of cross validation significance
 if param_grid is not None:
     # Perform parameter selection using inner loop of CV
