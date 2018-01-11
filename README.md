@@ -1,4 +1,5 @@
 
+
 # A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor
 <img src='https://travis-ci.org/lrgr/multifactorial-immune-response.svg?branch=master'>
 
@@ -45,14 +46,14 @@ Mark DM Leiserson, Vasilis Syrgkanis, Amy Gilson, Miroslav Dudik, Samuel Funt, A
 
 ### Figures
 
-<img src='https://raw.githubusercontent.com/lrgr/multifactorial-immune-response/gh-pages/fig1.png' style='width:300px'>
+<img src='http://multifactorial-immune-response.lrgr.io/fig1.png' style='width:300px'>
 
 **Figure 1**: (a) Predicted log TIL expansion versus ground-truth log TIL expansion for patients held out using LOOCV.  Predictions are formed using the elastic net. (b) Histogram of LOOCV error when patient responses are permuted uniformly at random 1000 times.  The overlaid dotted line displays the LOOCV error obtained on the original dataset.
 
- <img src='https://github.com/lrgr/multifactorial-immune-response/blob/gh-pages/fig2.png?raw=true' style='width:300px'>
+ <img src='http://multifactorial-immune-response.lrgr.io/fig2.png?raw=true' style='width:300px'>
 
 **Figure 2**: Learned elastic net coefficients and feature types.
 
-<img src='https://github.com/lrgr/multifactorial-immune-response/blob/gh-pages/fig3.png?raw=true' style='width:300px'>
+<img src='http://multifactorial-immune-response.lrgr.io/fig3.png?raw=true'>
 
 **Figure 3**: Distributions of biomarker values in patients with and without durable clinical benefit (defined as ≥ 6 months of progression-free survival): (a) predicted number of expanded TIL clones; (b) missense SNV count; (c) expressed neoantigen count; and, (d) percentage of tumor infiltrating immune cells found to be PD-L1-positive.

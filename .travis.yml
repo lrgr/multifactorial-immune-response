@@ -24,5 +24,6 @@ deploy:
   github-token: $GITHUB_TOKEN  # Set in travis-ci.org dashboard, marked secure
   keep-history: true
   local-dir: output/en/figs
+  fqdn: multifactorial-immune-response.lrgr.io
   on:
     branch: master
