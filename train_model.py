@@ -88,7 +88,7 @@ logger.info('[Held-out MAE, Baseline MAE]: {}'.format([np.sqrt(pred_sqd_err).mea
                                                  np.sqrt(baseline_sqd_err).mean()]))
 variance_explained = 1. - pred_sqd_err.mean()/baseline_sqd_err.mean()
 logger.info('Variance explained: {}'.format(variance_explained))
-sys.exit(1)
+
 # 3) Record the data into our plots dictionary
 json_output['ExpandedClones'] = {
     "preds": sub_preds.tolist(),
