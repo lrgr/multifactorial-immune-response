@@ -30,7 +30,7 @@ IMPORTANCE_NAMES = {
 en_inner_cv = LeaveOneOut()
 en_estimator = ElasticNetCV(l1_ratio = [.1, .5, .7, .9, .95, .99],
                         cv = en_inner_cv, normalize=True,
-                        max_iter = 100000)
+                        max_iter = 100000, tol=1e-7)
 en_param_grid = None
 
 # Build pipeline which performs estimation after imputing missing values

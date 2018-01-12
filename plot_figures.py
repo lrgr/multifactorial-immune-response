@@ -131,7 +131,8 @@ ordered_biomarkers = ['Predicted expanded TIL clones', 'Missense SNV count', 'Ex
 g = sns.FacetGrid(biomarker_df, col="Biomarker", sharex=True, sharey=False,
                 col_wrap=2, col_order=ordered_biomarkers)
 g = g.map(sns.boxplot, "Progression-free survival", "Biomarker value",
-    palette=sns.color_palette()[:2], width=0.4, order=['≤ 6 months', '> 6 months'])
+    palette=sns.color_palette()[:2], width=0.4, order=['≤ 6 months', '> 6 months'],
+    autorange=True)
 g = g.map(sns.swarmplot, "Progression-free survival", "Biomarker value",
           order=['≤ 6 months', '> 6 months'], color="0.25")
 

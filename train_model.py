@@ -68,7 +68,7 @@ outer_cv = LeaveOneOut()
 preds = pd.Series(cross_val_predict(estimator = gscv,
                                    X=X.loc[:,training_cols],
                                     y=y[outcome_name], cv=outer_cv,
-                                    n_jobs = args.n_jobs),
+                                    n_jobs = -1),
                  index = patients)
 
 # Visualize and asses held-out predictions
@@ -86,9 +86,9 @@ logger.info('[Held-out RMSE, Baseline RMSE]: {}'.format([np.sqrt(pred_sqd_err.me
 logger.info('[Held-out MSE, Baseline MSE]: {}'.format([pred_sqd_err.mean(), baseline_sqd_err.mean()]))
 logger.info('[Held-out MAE, Baseline MAE]: {}'.format([np.sqrt(pred_sqd_err).mean(),
                                                  np.sqrt(baseline_sqd_err).mean()]))
-variance_explained = 1 - pred_sqd_err.mean()/baseline_sqd_err.mean()
+variance_explained = 1. - pred_sqd_err.mean()/baseline_sqd_err.mean()
 logger.info('Variance explained: {}'.format(variance_explained))
-
+sys.exit(1)
 # 3) Record the data into our plots dictionary
 json_output['ExpandedClones'] = {
     "preds": sub_preds.tolist(),
@@ -117,7 +117,6 @@ model = pipeline.fit(X.loc[:,training_cols], y[outcome_name])
 # Examine variable importance or coefficients in each model.
 # Weight raw variable coefficients by associated variable standard deviations;
 # this places all variables on the same scale.
-logger.info('ElasticNet coefficients')
 if args.model == RF:
     variable_scores = model.named_steps['estimator'].feature_importances_
 elif args.model == EN:
@@ -131,8 +130,15 @@ variable_scores = pd.concat([variable_scores, feature_classes], axis = 1)
 
 # Sort scores by importance magnitude
 variable_scores = variable_scores.reindex(variable_scores['Score'].abs().sort_values(ascending=False).index)
-logger.info('----------------------')
-logger.info(variable_scores.to_string())
+
+# Output a pretty summary of feature importances
+var_importance_tbl = variable_scores.to_string()
+rows = var_importance_tbl.split('\n')
+logger.info('-' * len(rows[0]))
+logger.info('RandomForest feature importances' if args.model == RF else 'ElasticNet coefficients')
+logger.info('-' * len(rows[0]))
+for row in rows:
+    logger.info(row)
 logger.info('')
 
 ################################################################################
