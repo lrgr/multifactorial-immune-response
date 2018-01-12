@@ -13,7 +13,7 @@ We use continuous integration to automatically regenerate the figures whenever t
 The methods and experiments are written in Python 3. We recommend using Conda to manage dependencies, which you can do directly using the provided `environment.yml` file:
 
     conda env create -f environment.yml
-    source activate hierarchical-hmm-env
+    source activate multifactorial-immune-response-env
 
 ### Usage
 
