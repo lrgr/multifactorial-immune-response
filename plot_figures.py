@@ -133,12 +133,14 @@ g = sns.FacetGrid(biomarker_df, col="Biomarker", sharex=True, sharey=False,
 g = g.map(sns.boxplot, "Progression-free survival", "Biomarker value",
     palette=sns.color_palette()[:2], width=0.4, order=['≤ 6 months', '> 6 months'],
     autorange=True)
-g = g.map(sns.swarmplot, "Progression-free survival", "Biomarker value",
-          order=['≤ 6 months', '> 6 months'], color="0.25")
+g = g.map(sns.swarmplot, "Progression-free survival", "Biomarker value", "Treated",
+          order=['≤ 6 months', '> 6 months'], hue_order=["Yes", "No"],
+          palette=[sns.color_palette()[2], "k"])
 
 # Custom y-axis for PD-L1 expression plot
 g.axes[-1].set_yticks((0, 1, 2))
 g.axes[-1].set_yticklabels(('<1%', '1-5%', '≥5%'))
+#g.axes[-1].legend(loc='upper center', bbox_to_anchor=(-0.25, -0.2), ncol=2)
 
 # Prepend subfigure letter to titles
 for biomarker, ax, letter in zip(ordered_biomarkers, g.axes, 'abcd'):
@@ -146,5 +148,5 @@ for biomarker, ax, letter in zip(ordered_biomarkers, g.axes, 'abcd'):
     ax.set_ylabel(biomarker)
 
 # Show the plot
-plt.tight_layout()
+plt.subplots_adjust(bottom=0.12)
 plt.savefig('%s3.%s' % (args.output_prefix, args.extension))

@@ -46,11 +46,13 @@ biomarkers = ['N Expanded Clones that were TILs A->B',
               'expressed_neoantigen_count','missense_snv_count','PD-L1']
 biomarker_plot_items = []
 for biomarker in biomarkers:
+    all_dcb_val = min( v for b, v in zip(df['benefit'].tolist(), df[biomarker].tolist()) if b )
     for x, y in zip(df['benefit'].tolist(), df[biomarker].tolist()):
         biomarker_plot_items.append({
             "Biomarker": biomarker,
             "Benefit": bool(x),
-            "Biomarker value": y
+            "Biomarker value": y,
+            "Treated": "Yes" if y >= all_dcb_val else "No"
         })
 
 # Save the data to our plots dictionary
