@@ -2,7 +2,6 @@ language: python
 python:
   - "3.6"
 install:
-  - travis_wait 45 mvn install
   - sudo apt-get update
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
@@ -17,7 +16,7 @@ install:
   - conda env create -f environment.yml
   - source activate multifactorial-immune-response-env
 
-script: snakemake all
+script: travis_wait 45 snakemake all
 
 deploy:
   provider: pages
