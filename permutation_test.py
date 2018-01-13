@@ -45,6 +45,7 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 # RUN PERMUTATION TEST
 ################################################################################
 pipeline = PIPELINES[args.model]
+pipeline.named_steps['estimator'].set_params(n_jobs=args.n_jobs)
 param_grid = PARAM_GRIDS[args.model]
 
 # Conduct a permutation test of cross validation significance

@@ -51,12 +51,13 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 # Set up nested validation for parameter selection and eventual evaluation
 # Define parameter selection protocol
 pipeline = PIPELINES[args.model]
+pipeline.named_steps['estimator'].set_params(n_jobs=args.n_jobs)
 param_grid = PARAM_GRIDS[args.model]
 if param_grid is not None:
     # Perform parameter selection using inner loop of CV
     inner_cv = LeaveOneOut()
     gscv = GridSearchCV(estimator=pipeline, param_grid=param_grid,
-                        cv=inner_cv,
+                        cv=inner_cv, n_jobs=args.n_jobs,
                         scoring = 'neg_mean_squared_error')
 else:
     # No parameter selection required
@@ -68,7 +69,7 @@ outer_cv = LeaveOneOut()
 preds = pd.Series(cross_val_predict(estimator = gscv,
                                    X=X.loc[:,training_cols],
                                     y=y[outcome_name], cv=outer_cv,
-                                    n_jobs = -1),
+                                    n_jobs = args.n_jobs),
                  index = patients)
 
 # Visualize and asses held-out predictions
