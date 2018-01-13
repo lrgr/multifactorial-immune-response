@@ -75,14 +75,15 @@ rule train_model:
         outcomes=PROCESSED_OUTCOMES,
         feature_classes=PROCESSED_FEATURE_CLASSES
     params:
-        model=config['model']
+        model=config['model'],
+	n_jobs=config['n_jobs']
     threads: config['n_jobs']
     output:
         MODEL_COEFFICIENTS,
         MODEL_RESULTS
     shell:
         'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model}'
+        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model} -nj {params.n_jobs}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:

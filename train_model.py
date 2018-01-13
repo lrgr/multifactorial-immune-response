@@ -57,7 +57,7 @@ if param_grid is not None:
     # Perform parameter selection using inner loop of CV
     inner_cv = LeaveOneOut()
     gscv = GridSearchCV(estimator=pipeline, param_grid=param_grid,
-                        cv=inner_cv,
+                        cv=inner_cv, n_jobs=args.n_jobs,
                         scoring = 'neg_mean_squared_error')
 else:
     # No parameter selection required
