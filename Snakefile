@@ -1,5 +1,5 @@
 from os.path import join
-configfile: 'config.yml'
+configfile: 'configs/default.yml'
 
 ################################################################################
 # SETTINGS, FILES, AND DIRECTORIES
@@ -76,14 +76,17 @@ rule train_model:
         feature_classes=PROCESSED_FEATURE_CLASSES
     params:
         model=config['model'],
-	n_jobs=config['n_jobs']
+        n_jobs=config['n_jobs'],
+        max_iter=config['max_iter'],
+        tol=config['tol']
     threads: config['n_jobs']
     output:
         MODEL_COEFFICIENTS,
         MODEL_RESULTS
     shell:
         'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model} -nj {params.n_jobs}'
+        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model} '\
+        '-nj {params.n_jobs} -mi {params.max_iter} -t {params.tol}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:
@@ -104,14 +107,17 @@ rule permutation_test:
         n_permutations=config['n_permutations'],
         random_seed=config['random_seed'],
         n_jobs=config['n_jobs'],
-        model=config['model']
+        model=config['model'],
+        max_iter=config['max_iter'],
+        tol=config['tol']
     threads: config['n_jobs']
     output:
         PERMUTATION_TEST_RESULTS
     shell:
         'python permutation_test.py -ff {input.features} -fcf {input.feature_classes} '\
         '-ocf {input.outcomes} -of {output} -np {params.n_permutations} '\
-        '-nj {params.n_jobs} -rs {params.random_seed} -m {params.model}'
+        '-nj {params.n_jobs} -rs {params.random_seed} -m {params.model} '\
+        '-mi {params.max_iter} -t {params.tol}'
 
 # Make plots
 rule plot:

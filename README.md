@@ -5,7 +5,7 @@
 
 This repository contains the source code for reproducing the experiments and figures from Leiserson, et al. (bioRxiv, 2017). See the [references section](#references) below for more information on the paper.
 
-We use continuous integration to automatically regenerate the figures whenever there is a push to the master branch. You can see the [current figures below](#figures).
+We use continuous integration to automatically regenerate the figures whenever there is a push to the master branch. You can see the [current figures below](#figures). Note that, for runtime purposes, the default parameters for the maximum iterations, tolerance, and number of permutations are relaxed, and thus the automatically generated figures may be slightly different from the ones in the paper.
 
 ### Setup
 
@@ -23,16 +23,21 @@ We use [`snakemake`](https://snakemake.readthedocs.io/en/latest/) to run a pipel
 
 #### Configuration
 
-Configuration for the entire pipeline is controlled by the variables in `config.yml`. The following variables can be set:
+Configuration for the entire pipeline is controlled by the variables in `configs/default.yml`. The following variables can be set:
 
-|Variable name      | Choices                | Default   |
-|-------------------|------------------------|-----------|
-| `model`           | `'en'`, `'rf'`         | `'en'`    |
-| `n_permutations`  | Positive int           | 1         |
-| `random_seed`     | Positive int           | 12345     |
-| `n_jobs`          | Positive int           | 4         |
-| `figure_format`   | Standard image formats | png       |
+|-------------------|------------------------|-----------|------------------------|
+|Variable name      | Choices                | Default   | Value used in paper    |
+|-------------------|------------------------|-----------|------------------------|
+| `model`           | `'en'`, `'rf'`         | `'en'`    | Both `'en'` and `'rf'` |
+| `n_permutations`  | Positive int           | `1`       | `1000`                 |
+| `max_iter`        | Positive int           | `100000`  | `1000000`              |
+| `tol`             | Positive real          | `1e-4`    | `1e-7`                 |
+| `random_seed`     | Positive int           | `12345`   | `12345`                |
+| `n_jobs`          | Positive int           | `1`       | `46`                   |
+| `figure_format`   | Standard image formats | png       | png                    |
+|-------------------|------------------------|-----------|------------------------|
 
+The configuration values used in the paper are stored for convenience in `configs/paper.yml`. To use that configuration, change the first line of the `Snakefile` accordingly.
 
 ### Support
 

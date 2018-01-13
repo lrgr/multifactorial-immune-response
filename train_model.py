@@ -18,6 +18,12 @@ parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
 parser.add_argument('-of', '--outcome_file', type=str, required=True)
 parser.add_argument('-op', '--output_prefix', type=str, required=True)
 parser.add_argument('-m', '--model', type=str, required=True, choices=MODEL_NAMES)
+parser.add_argument('-mi', '--max_iter', type=int, required=False,
+    default=1000000,
+    help='ElasticNet only. Default is parameter used for the paper submission.')
+parser.add_argument('-t', '--tol', type=float, required=False,
+    default=1e-7,
+    help='ElasticNet only. Default is parameter used for the paper submission.')
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
 parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
@@ -52,6 +58,9 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 # Define parameter selection protocol
 pipeline = PIPELINES[args.model]
 pipeline.named_steps['estimator'].set_params(n_jobs=args.n_jobs)
+if args.model == EN:
+    pipeline.named_steps['estimator'].set_params(max_iter=args.max_iter)
+    pipeline.named_steps['estimator'].set_params(tol=args.tol)
 param_grid = PARAM_GRIDS[args.model]
 if param_grid is not None:
     # Perform parameter selection using inner loop of CV
