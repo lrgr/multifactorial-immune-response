@@ -25,8 +25,7 @@ We use [`snakemake`](https://snakemake.readthedocs.io/en/latest/) to run a pipel
 
 Configuration for the entire pipeline is controlled by the variables in `configs/default.yml`. The following variables can be set:
 
-|-------------------|------------------------|-----------|------------------------|
-|Variable name      | Choices                | Default   | Value used in paper    |
+| Variable name     | Choices                | Default   |  Value used in paper   |
 |-------------------|------------------------|-----------|------------------------|
 | `model`           | `'en'`, `'rf'`         | `'en'`    | Both `'en'` and `'rf'` |
 | `n_permutations`  | Positive int           | `1`       | `1000`                 |
@@ -35,7 +34,6 @@ Configuration for the entire pipeline is controlled by the variables in `configs
 | `random_seed`     | Positive int           | `12345`   | `12345`                |
 | `n_jobs`          | Positive int           | `1`       | `46`                   |
 | `figure_format`   | Standard image formats | png       | png                    |
-|-------------------|------------------------|-----------|------------------------|
 
 The configuration values used in the paper are stored for convenience in `configs/paper.yml`. To use that configuration, change the first line of the `Snakefile` accordingly.
 

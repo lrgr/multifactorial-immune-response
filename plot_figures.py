@@ -100,7 +100,7 @@ patches = [ mpatches.Patch(color=col, label=c) for c, col in classToColor.items(
 plt.legend(handles=patches, fontsize=14)
 
 # Output to file
-plt.subplots_adjust(left=0.25, right=0.95, top=0.95)
+plt.subplots_adjust(left=0.3, right=0.95, top=0.95)
 plt.savefig('%s2.%s' % (args.output_prefix, args.extension))
 plt.clf()
 sns.set(font_scale=1, style='whitegrid')
