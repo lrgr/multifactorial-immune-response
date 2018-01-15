@@ -5,7 +5,7 @@
 
 This repository contains the source code for reproducing the experiments and figures from Leiserson, et al. (bioRxiv, 2017). See the [references section](#references) below for more information on the paper.
 
-We use continuous integration to automatically regenerate the figures whenever there is a push to the master branch. You can see the [current figures below](#figures). Note that, for runtime purposes, the default parameters for the number of permutations are relaxed, and thus the automatically generated Figure 2 will be different from the one in the paper.
+We use continuous integration to automatically regenerate the figures whenever there is a push to the master branch. You can see the [current figures below](#figures). Note that, for runtime purposes, by default we do not run the permutation test, and thus the automatically generated Figure 1b will be different from the one in the paper.
 
 ### Setup
 
