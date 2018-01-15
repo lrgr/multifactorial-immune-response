@@ -73,7 +73,7 @@ pipeline.named_steps['estimator'].set_params(verbose=1 if args.verbosity else 0)
 score, permutation_scores, pvalue = permutation_test_score(estimator = gscv,
     X=X.loc[:,training_cols].as_matrix(), y=y[outcome_name].as_matrix(),
     cv=outer_cv, n_permutations=args.n_permutations, n_jobs=args.n_jobs,
-    random_state=args.random_seed, verbose=51 if args.verbosity else 0,
+    random_state=args.random_seed, verbose=61 if args.verbosity else 0,
     scoring = 'neg_mean_squared_error')
 
 ################################################################################
