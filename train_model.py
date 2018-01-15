@@ -76,11 +76,12 @@ else:
 # using outer loop of CV
 logger.info('* Performing LOO cross-validation...')
 outer_cv = LeaveOneOut()
+sys.stderr = sys.stdout
 preds = pd.Series(cross_val_predict(estimator = gscv,
                                    X=X.loc[:,training_cols],
                                     y=y[outcome_name], cv=outer_cv,
                                     n_jobs = args.n_jobs,
-                                    verbose=50 if args.verbosity > 0 else 0),
+                                    verbose=51 if args.verbosity > 0 else 0),
                  index = patients)
 
 # Visualize and asses held-out predictions

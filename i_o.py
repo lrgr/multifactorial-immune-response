@@ -1,6 +1,6 @@
 #!/usr/bin/env
 
-import logging
+import sys, logging
 
 FORMAT = '%(asctime)s %(filename)-15s %(levelname)-10s: %(message)s'
 logging.basicConfig(format=FORMAT)

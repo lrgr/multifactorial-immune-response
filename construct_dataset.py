@@ -130,7 +130,7 @@ for feature in args.binary_feature_names:
         feature_classes.drop('log_'+feature, inplace=True)
 
 # Remove datapoints with missing outcomes
-patients_missing_outcomes = y[y[args.outcome_name].isna()].index
+patients_missing_outcomes = y[y[args.outcome_name].isnull()].index
 X = X.drop(patients_missing_outcomes)
 y = y.drop(patients_missing_outcomes)
 
