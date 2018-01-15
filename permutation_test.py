@@ -25,7 +25,7 @@ parser.add_argument('-t', '--tol', type=float, required=False,
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-rs', '--random_seed', type=int, default=12345, required=False)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
-parser.add_argument('-np', '--n_permutations', type=int, default=10, required=False)
+parser.add_argument('-np', '--n_permutations', type=int, default=1, required=False)
 parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
     default=['Clinical','Tumor','Blood'])
 args = parser.parse_args(sys.argv[1:])
@@ -69,10 +69,11 @@ else:
 
 # Convert dataframes to matrices to avoid dataframe splitting error
 outer_cv = LeaveOneOut()
+pipeline.named_steps['estimator'].set_params(verbose=1 if args.verbosity else 0)
 score, permutation_scores, pvalue = permutation_test_score(estimator = gscv,
     X=X.loc[:,training_cols].as_matrix(), y=y[outcome_name].as_matrix(),
     cv=outer_cv, n_permutations=args.n_permutations, n_jobs=args.n_jobs,
-    random_state=args.random_seed, verbose=3,
+    random_state=args.random_seed, verbose=50 if args.verbosity else 0,
     scoring = 'neg_mean_squared_error')
 
 ################################################################################

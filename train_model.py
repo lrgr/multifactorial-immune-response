@@ -45,7 +45,7 @@ y = y.reindex(index = patients)
 outcome_name = y.columns[0]
 
 # Create some data structures to hold our output
-json_output = dict(patients=patients.tolist(), params=vars(args))
+json_output = dict(patients=list(map(float, patients)), params=vars(args))
 
 ################################################################################
 # TRAIN A MODEL ON ALL THE DATA
@@ -74,11 +74,13 @@ else:
 
 # Produce held-out predictions for parameter-selected model
 # using outer loop of CV
+logger.info('* Performing LOO cross-validation...')
 outer_cv = LeaveOneOut()
 preds = pd.Series(cross_val_predict(estimator = gscv,
                                    X=X.loc[:,training_cols],
                                     y=y[outcome_name], cv=outer_cv,
-                                    n_jobs = args.n_jobs),
+                                    n_jobs = args.n_jobs,
+                                    verbose=20 if args.verbosity > 0 else 0),
                  index = patients)
 
 # Visualize and asses held-out predictions
@@ -122,6 +124,8 @@ json_output['ExpandedClones'] = {
 # EVALUATE FEATURE IMPORTANCE
 ################################################################################
 # Train each model on full dataset
+logger.info('* Training model on all the data...')
+pipeline.named_steps['estimator'].set_params(verbose=1 if args.verbosity else 0)
 model = pipeline.fit(X.loc[:,training_cols], y[outcome_name])
 
 # Examine variable importance or coefficients in each model.
