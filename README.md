@@ -59,4 +59,4 @@ Mark DM Leiserson, Vasilis Syrgkanis, Amy Gilson, Miroslav Dudik, Samuel Funt, A
 
 <img src='http://multifactorial-immune-response.lrgr.io/fig3.png?raw=true'>
 
-**Figure 3**: Distributions of biomarker values in patients with and without durable clinical benefit (defined as ≥ 6 months of progression-free survival): (a) predicted number of expanded TIL clones; (b) missense SNV count; (c) expressed neoantigen count; and, (d) percentage of tumor infiltrating immune cells found to be PD-L1-positive.
+**Figure 3**: Distributions of biomarker values in patients with and without durable clinical benefit (DCB, defined as ≥ 6 months of progression-free survival): (a) predicted number of expanded TIL clones; (b) missense SNV count; (c) expressed neoantigen count; and, (d) percentage of tumor infiltrating immune cells found to be PD-L1-positive. When each biomarker alone is used for triage, the patients highlighted in red must be treated to ensure all DCB patients are treated.
