@@ -57,7 +57,7 @@ true_score = -1*permuted_results['true_score']
 pvalue = permuted_results['pvalue']
 
 ax2.hist(permutation_scores, 20,
-         label='Permuted (Monte \nCarlo $p < %.1g$)' % pvalue,
+         label='Permuted ($p < %.1g$)' % pvalue,
          edgecolor='black')
 ylim = ax2.get_ylim()
 ax2.plot(2 * [true_score], ylim, '--g', linewidth=3,
