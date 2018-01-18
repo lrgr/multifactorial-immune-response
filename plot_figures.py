@@ -38,9 +38,9 @@ fig1, (ax1, ax2) = plt.subplots(1, 2)
 fig1.set_size_inches(10, 5)
 
 # Expanded clones (predicted vs. true)
-pred = np.array(results['ExpandedClones']['preds'])
-true = np.array(results['ExpandedClones']['true'])
-variance_explained = results['ExpandedClones']['variance_explained']
+pred = np.array(results['preds'])
+true = np.array(results['true'])
+variance_explained = results['variance_explained']
 ax1.scatter(pred, true)
 min_val = min(pred.min(),true.min())
 max_val = max(pred.max(),true.max())
@@ -52,8 +52,8 @@ ax1.text(0.01, 0.95, 'Variance explained: %.2f%%' % (variance_explained*100.),
 ax1.set_title('(a)', fontsize=16)
 
 # Permutation scores
-permutation_scores = -1*np.array(permuted_results['permutation_scores'])
-true_score = -1*permuted_results['true_score']
+permutation_scores = np.array(permuted_results['permutation_scores'])
+true_score = permuted_results['true_score']
 pvalue = permuted_results['pvalue']
 
 ax2.hist(permutation_scores, 20,

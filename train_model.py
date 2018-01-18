@@ -8,7 +8,8 @@ import sys, os, argparse, logging, pandas as pd, numpy as np, json
 from sklearn.model_selection import *
 
 # Load our modules
-from models import EN, RF, MODEL_NAMES, PIPELINES, PARAM_GRIDS
+from models import MODEL_NAMES, init_model, RF, EN
+from metrics import compute_metrics, RMSE, MAE, MSE
 from i_o import getLogger
 
 # Parse command-line arguments
@@ -28,6 +29,7 @@ parser.add_argument('-v', '--verbosity', type=int, required=False, default=loggi
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
 parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
     default=['Clinical','Tumor','Blood'])
+parser.add_argument('-rs', '--random_seed', type=int, default=12345, required=False)
 args = parser.parse_args(sys.argv[1:])
 
 # Set up logger
@@ -56,21 +58,7 @@ training_cols = feature_classes['Class'].isin(args.training_classes).index.tolis
 
 # Set up nested validation for parameter selection and eventual evaluation
 # Define parameter selection protocol
-pipeline = PIPELINES[args.model]
-pipeline.named_steps['estimator'].set_params(n_jobs=args.n_jobs)
-if args.model == EN:
-    pipeline.named_steps['estimator'].set_params(max_iter=args.max_iter)
-    pipeline.named_steps['estimator'].set_params(tol=args.tol)
-param_grid = PARAM_GRIDS[args.model]
-if param_grid is not None:
-    # Perform parameter selection using inner loop of CV
-    inner_cv = LeaveOneOut()
-    gscv = GridSearchCV(estimator=pipeline, param_grid=param_grid,
-                        cv=inner_cv, n_jobs=args.n_jobs,
-                        scoring = 'neg_mean_squared_error')
-else:
-    # No parameter selection required
-    gscv = pipeline
+pipeline, gscv = init_model(args.model, args.n_jobs, args.random_seed, args.max_iter, args.tol)
 
 # Produce held-out predictions for parameter-selected model
 # using outer loop of CV
@@ -85,40 +73,28 @@ preds = pd.Series(cross_val_predict(estimator = gscv,
 
 # Visualize and asses held-out predictions
 # 1) Subset predictions and ground truth to relevant indices
-sub_preds = preds.loc[patients].values
 sub_y = y.loc[patients][outcome_name].values
-min_val = min(sub_preds.min(), sub_y.min())
-max_val = max(sub_preds.max(), sub_y.max())
+sub_preds = preds.loc[patients].values
+metric_vals, var_explained = compute_metrics(sub_y, sub_preds)
+rmses = metric_vals[RMSE]
+mses = metric_vals[MSE]
+maes = metric_vals[MAE]
 
 # 2) Compare held-out RMSE to baseline RMSE obtained by predicting mean
-baseline_sqd_err = (y[outcome_name] - y[outcome_name].mean())**2
-pred_sqd_err = (sub_y-sub_preds)**2
-logger.info('[Held-out RMSE, Baseline RMSE]: {}'.format([np.sqrt(pred_sqd_err.mean()),
-                                                   np.sqrt(baseline_sqd_err.mean())]))
-logger.info('[Held-out MSE, Baseline MSE]: {}'.format([pred_sqd_err.mean(), baseline_sqd_err.mean()]))
-logger.info('[Held-out MAE, Baseline MAE]: {}'.format([np.sqrt(pred_sqd_err).mean(),
-                                                 np.sqrt(baseline_sqd_err).mean()]))
-variance_explained = 1. - pred_sqd_err.mean()/baseline_sqd_err.mean()
-logger.info('Variance explained: {}'.format(variance_explained))
+logger.info('[Held-out RMSE, Baseline RMSE]: {}'.format([rmses['held-out'], rmses['baseline']]))
+logger.info('[Held-out MSE, Baseline MSE]: {}'.format([mses['held-out'], mses['baseline']]))
+logger.info('[Held-out MAE, Baseline MAE]: {}'.format([maes['held-out'], maes['baseline']]))
+logger.info('Variance explained: {}'.format(var_explained))
 
 # 3) Record the data into our plots dictionary
-json_output['ExpandedClones'] = {
+json_output.update({
     "preds": sub_preds.tolist(),
     "true": sub_y.tolist(),
-    "variance_explained": variance_explained,
-    "rmse": {
-        "baseline": np.sqrt(baseline_sqd_err.mean()),
-        "held-out": np.sqrt(pred_sqd_err.mean())
-    },
-    "mse": {
-        "baseline": baseline_sqd_err.mean(),
-        "held-out": pred_sqd_err.mean()
-    },
-    "mae": {
-        "baseline": np.sqrt(baseline_sqd_err).mean(),
-        "held-out": np.sqrt(pred_sqd_err).mean()
-    }
-}
+    "variance_explained": var_explained,
+    "rmse": rmses,
+    "mse": mses,
+    "mae": maes
+})
 
 ################################################################################
 # EVALUATE FEATURE IMPORTANCE

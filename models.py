@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer
 from sklearn.linear_model import ElasticNetCV, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import LeaveOneOut, KFold
+from sklearn.model_selection import LeaveOneOut, KFold, GridSearchCV, LeaveOneOut
 
 # Constants
 EN = 'en'
@@ -22,6 +22,31 @@ IMPORTANCE_NAMES = {
     EN: 'Learned coefficient',
     RF: 'Variable importance'
 }
+
+# Helper for creating models
+def init_model(model_name, n_jobs, random_seed, max_iter=None, tol=None):
+    pipeline = PIPELINES[model_name]
+    param_grid = PARAM_GRIDS[model_name]
+
+    # Set parameters
+    pipeline.named_steps['estimator'].set_params(n_jobs=n_jobs)
+    pipeline.named_steps['estimator'].set_params(random_state=random_seed)
+
+    if model_name == EN:
+        pipeline.named_steps['estimator'].set_params(max_iter=max_iter)
+        pipeline.named_steps['estimator'].set_params(tol=tol)
+
+    # Define parameters to search over
+    if param_grid is not None:
+        # Perform parameter selection using inner loop of CV
+        inner_cv = LeaveOneOut()
+        gscv = GridSearchCV(estimator=pipelines[key], param_grid=param_grids[key],
+                                cv=inner_cv,
+                                scoring = 'neg_mean_squared_error')
+    else:
+        gscv = pipeline
+
+    return pipeline, gscv
 
 ################################################################################
 # ELASTIC NET

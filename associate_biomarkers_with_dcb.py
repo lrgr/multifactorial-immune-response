@@ -25,7 +25,7 @@ logger = getLogger(args.verbosity)
 with open(args.results_file, 'r') as IN:
     results = json.load(IN)
     patients = results['patients']
-    preds = results['ExpandedClones']['preds']
+    preds = results['preds']
 
 df = pd.read_csv(args.feature_file, sep='\t', index_col=0)
 

@@ -9,6 +9,8 @@ DATA_DIR = 'data'
 RAW_DATA_DIR = join(DATA_DIR, 'raw')
 OUTPUT_DIR = 'output/%s' % config['model']
 FIGURES_DIR = join(OUTPUT_DIR, 'figs')
+PERMUTATION_DIR = join(OUTPUT_DIR, 'permutations')
+MODELS_DIR = join(OUTPUT_DIR, 'models')
 
 # Data files
 SNYDER_COUNTS   = join(RAW_DATA_DIR, 'snyder_et_al_data_counts.csv')
@@ -25,11 +27,13 @@ PROCESSED_OUTCOMES = PROCESSED_DATA_PREFIX + '-outcomes.tsv'
 PROCESSED_FEATURE_CLASSES = PROCESSED_DATA_PREFIX + '-feature-classes.tsv'
 
 # Output files
-MODEL_OUTPUT_PREFIX = join(OUTPUT_DIR, '%s-trained' % config['model'])
+MODEL_OUTPUT_PREFIX = join(MODELS_DIR, '%s-trained' % config['model'])
 MODEL_RESULTS = MODEL_OUTPUT_PREFIX + '-results.json'
 MODEL_COEFFICIENTS = MODEL_OUTPUT_PREFIX + '-coefficients.tsv'
 
 BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, '%s-biomarker-dcb-plot-data.json' % config['model'])
+
+PERMUTATION_TEST_PREFIX = join(PERMUTATION_DIR, '%s-permuted-results' % config['model'])
 PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, '%s-permutation-test-results.json' % config['model'])
 
 # Plots
@@ -78,7 +82,8 @@ rule train_model:
         model=config['model'],
         n_jobs=config['n_jobs'],
         max_iter=config['max_iter'],
-        tol=config['tol']
+        tol=config['tol'],
+        random_seed=config['random_seed']
     threads: config['n_jobs']
     output:
         MODEL_COEFFICIENTS,
@@ -86,7 +91,8 @@ rule train_model:
     shell:
         'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
         '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model} '\
-        '-nj {params.n_jobs} -mi {params.max_iter} -t {params.tol}'
+        '-nj {params.n_jobs} -mi {params.max_iter} -t {params.tol} '\
+        '-rs {params.random_seed}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:
@@ -98,26 +104,35 @@ rule biomarkers_and_dcb:
     shell:
         'python associate_biomarkers_with_dcb.py -ff {input.features} -rf {input.results} -o {output}'
 
-rule permutation_test:
+rule map_permutation_test:
     input:
         features=PROCESSED_FEATURES,
         outcomes=PROCESSED_OUTCOMES,
         feature_classes=PROCESSED_FEATURE_CLASSES
     params:
-        n_permutations=config['n_permutations'],
-        random_seed=config['random_seed'],
+        random_seed=lambda wildcards, output: config['random_seed'] + int(wildcards['index']),
         n_jobs=config['n_jobs'],
         model=config['model'],
         max_iter=config['max_iter'],
         tol=config['tol']
     threads: config['n_jobs']
     output:
+        "%s-{index}.json" % PERMUTATION_TEST_PREFIX
+    shell:
+        'python permutation_test.py -of {output} map -ff {input.features} '\
+        '-fcf {input.feature_classes} -ocf {input.outcomes}  '\
+        '-nj {params.n_jobs} -ers {params.random_seed} -prs {params.random_seed}'\
+        ' -m {params.model} -mi {params.max_iter} -t {params.tol}'
+
+rule reduce_permutation_test:
+    input:
+        permutation_test_files=expand("%s-{index}.json" % PERMUTATION_TEST_PREFIX, index=range(1, config['n_permutations']+1)),
+        results_file=MODEL_RESULTS
+    output:
         PERMUTATION_TEST_RESULTS
     shell:
-        'python permutation_test.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-ocf {input.outcomes} -of {output} -np {params.n_permutations} '\
-        '-nj {params.n_jobs} -rs {params.random_seed} -m {params.model} '\
-        '-mi {params.max_iter} -t {params.tol}'
+        'python permutation_test.py -of {output} reduce '\
+        '-rf {input.results_file} -pf {input.permutation_test_files}'
 
 # Make plots
 rule plot:
