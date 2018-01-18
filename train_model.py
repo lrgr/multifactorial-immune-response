@@ -8,7 +8,7 @@ import sys, os, argparse, logging, pandas as pd, numpy as np, json
 from sklearn.model_selection import *
 
 # Load our modules
-from models import MODEL_NAMES, init_model, RF, EN
+from models import MODEL_NAMES, init_model, RF, EN, FEATURE_CLASSES
 from metrics import compute_metrics, RMSE, MAE, MSE
 from i_o import getLogger
 
@@ -27,8 +27,8 @@ parser.add_argument('-t', '--tol', type=float, required=False,
     help='ElasticNet only. Default is parameter used for the paper submission.')
 parser.add_argument('-v', '--verbosity', type=int, required=False, default=logging.INFO)
 parser.add_argument('-nj', '--n_jobs', type=int, default=1, required=False)
-parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
-    default=['Clinical','Tumor','Blood'])
+parser.add_argument('-efc', '--excluded_feature_classes', type=str, required=False,
+    nargs='*', default=[], choices=FEATURE_CLASSES)
 parser.add_argument('-rs', '--random_seed', type=int, default=12345, required=False)
 args = parser.parse_args(sys.argv[1:])
 
@@ -53,8 +53,11 @@ json_output = dict(patients=list(map(float, patients)), params=vars(args))
 # TRAIN A MODEL ON ALL THE DATA
 ################################################################################
 # Choose which feature classes to use in training;
-# to use all feature classes set training_classes = ['Clinical','Tumor','Blood']
-training_cols = feature_classes['Class'].isin(args.training_classes).index.tolist()
+# to use all feature classes set
+#     selected_feature_classes = ['Clinical','Tumor','Blood']
+selected_feature_classes = set(map(str.capitalize, set(FEATURE_CLASSES) - set(args.excluded_feature_classes)))
+training_cols = feature_classes.loc[feature_classes['Class'].isin(selected_feature_classes)].index.tolist()
+json_output['training_features'] = training_cols
 
 # Set up nested validation for parameter selection and eventual evaluation
 # Define parameter selection protocol

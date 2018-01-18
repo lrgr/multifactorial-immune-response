@@ -23,6 +23,16 @@ IMPORTANCE_NAMES = {
     RF: 'Variable importance'
 }
 
+CLINICAL = 'clinical'
+TUMOR    = 'tumor'
+BLOOD    = 'blood'
+FEATURE_CLASSES = [CLINICAL, TUMOR, BLOOD]
+FEATURE_CLASS_NAMES = {
+    CLINICAL: 'Clinical',
+    TUMOR: 'Tumor',
+    BLOOD: 'Circulating'
+}
+
 # Helper for creating models
 def init_model(model_name, n_jobs, random_seed, max_iter=None, tol=None):
     pipeline = PIPELINES[model_name]

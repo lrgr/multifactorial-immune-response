@@ -5,13 +5,13 @@
 ################################################################################
 # Load required modules
 import sys, os, argparse, logging, pandas as pd, numpy as np, json
-from models import MODEL_NAMES, init_model
+from models import MODEL_NAMES, init_model, FEATURE_CLASSES
 from i_o import getLogger
 
 ################################################################################
 # MAP
 ################################################################################
-# Run the permutation test
+# Generate permuted data and train a model
 def map_permutation_test(args):
     # Set up logger
     logger = getLogger(args.verbosity)
@@ -32,14 +32,15 @@ def map_permutation_test(args):
     outcome_name = y.columns[0]
 
     # Restrict to the training columns
-    training_cols = feature_classes['Class'].isin(args.training_classes).index.tolist()
+    selected_feature_classes = set(map(str.capitalize, set(FEATURE_CLASSES) - set(args.excluded_feature_classes)))
+    training_cols = feature_classes['Class'].isin(selected_feature_classes).index.tolist()
 
     ############################################################################
     # RUN PERMUTATION TEST
     ############################################################################
     #Initialize model
-    pipeline, gscv = init_model(args.model, args.n_jobs, args.estimator_random_seed,
-        args.max_iter, args.tol)
+    pipeline, gscv = init_model(args.model, args.n_jobs,
+        args.estimator_random_seed, args.max_iter, args.tol)
 
     # Permute the outcomes
     np.random.seed(args.permutation_random_seed)
@@ -67,7 +68,8 @@ def map_permutation_test(args):
             "var_explained": var_explained.tolist(),
             "true": sub_y.tolist(),
             "preds": "sub_preds",
-            "params": vars(args)
+            "params": vars(args),
+            "training_features": training_cols
         }
         output.update(metric_vals.items())
         json.dump( output, OUT )
@@ -75,7 +77,7 @@ def map_permutation_test(args):
 ################################################################################
 # REDUCE
 ################################################################################
-#
+# Read in a bunch of results on permuted data and compute significance
 def reduce_permutation_test(args):
     ############################################################################
     # LOAD AND SUMMARIZE INPUT
@@ -85,7 +87,6 @@ def reduce_permutation_test(args):
 
     # Load results file
     with open(args.results_file, 'r') as IN:
-        print(args.results_file)
         obj = json.load(IN)
         true_score = obj['mse']['held-out']
 
@@ -141,8 +142,8 @@ def get_parser():
         default=12345, required=False)
     map_parser.add_argument('-prs', '--permutation_random_seed', type=int,
         default=12345, required=False)
-    map_parser.add_argument('-tc', '--training_classes', type=str, required=False, nargs='*',
-        default=['Clinical','Tumor','Blood'])
+    map_parser.add_argument('-efc', '--excluded_feature_classes', type=str, required=False, nargs='*',
+        default=[], choices=FEATURE_CLASSES)
 
     # Reduce arguments
     reduce_parser = subparser.add_parser("reduce")

@@ -1,4 +1,5 @@
 from os.path import join
+from models import FEATURE_CLASSES
 configfile: 'configs/default.yml'
 
 ################################################################################
@@ -27,9 +28,10 @@ PROCESSED_OUTCOMES = PROCESSED_DATA_PREFIX + '-outcomes.tsv'
 PROCESSED_FEATURE_CLASSES = PROCESSED_DATA_PREFIX + '-feature-classes.tsv'
 
 # Output files
-MODEL_OUTPUT_PREFIX = join(MODELS_DIR, '%s-trained' % config['model'])
-MODEL_RESULTS = MODEL_OUTPUT_PREFIX + '-results.json'
-MODEL_COEFFICIENTS = MODEL_OUTPUT_PREFIX + '-coefficients.tsv'
+MODEL_OUTPUT_PREFIX = join(MODELS_DIR, '%s-trained-excluding' % config['model'])
+MODEL_RESULTS = MODEL_OUTPUT_PREFIX + '-none-results.json'
+MODEL_COEFFICIENTS = MODEL_OUTPUT_PREFIX + '-none-coefficients.tsv'
+MODEL_SUMMARY = join(OUTPUT_DIR, '%s-models-summary.tsv' % config['model'])
 
 BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, '%s-biomarker-dcb-plot-data.json' % config['model'])
 
@@ -73,7 +75,7 @@ rule process_data:
         '{input.expansion_ac} -op {PROCESSED_DATA_PREFIX}'
 
 # Train model
-rule train_model:
+rule train_models:
     input:
         features=PROCESSED_FEATURES,
         outcomes=PROCESSED_OUTCOMES,
@@ -83,16 +85,28 @@ rule train_model:
         n_jobs=config['n_jobs'],
         max_iter=config['max_iter'],
         tol=config['tol'],
-        random_seed=config['random_seed']
+        random_seed=config['random_seed'],
+        excluded_feature_classes=lambda wildcards, output: '' if wildcards['excluded_feature_class'] == 'none' else wildcards['excluded_feature_class']
     threads: config['n_jobs']
     output:
-        MODEL_COEFFICIENTS,
-        MODEL_RESULTS
+        MODEL_OUTPUT_PREFIX + '-{excluded_feature_class}-coefficients.tsv',
+        MODEL_OUTPUT_PREFIX + '-{excluded_feature_class}-results.json'
     shell:
         'python train_model.py -ff {input.features} -fcf {input.feature_classes} '\
-        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX} -m {params.model} '\
-        '-nj {params.n_jobs} -mi {params.max_iter} -t {params.tol} '\
-        '-rs {params.random_seed}'
+        '-of {input.outcomes} -op {MODEL_OUTPUT_PREFIX}-{wildcards.excluded_feature_class}'\
+        ' -m {params.model} -nj {params.n_jobs} -mi {params.max_iter} '\
+        '-t {params.tol} -rs {params.random_seed} -efc {params.excluded_feature_classes}'
+
+# Summarize the models
+rule summarize_models:
+    input:
+        expand('%s-{excluded_feature_class}-results.json' % MODEL_OUTPUT_PREFIX, excluded_feature_class=FEATURE_CLASSES + ['none'])
+    params:
+        feature_classes=FEATURE_CLASSES + ['none']
+    output:
+        MODEL_SUMMARY
+    shell:
+        'python summarize_models.py -rf {input} -of {output} -sfc {params.feature_classes}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:
@@ -157,4 +171,5 @@ rule all:
     input:
         FIG1,
         FIG2,
-        FIG3
+        FIG3,
+        MODEL_SUMMARY

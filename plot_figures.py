@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('agg')
 import sys, os, argparse, json, matplotlib.pyplot as plt, seaborn as sns, pandas as pd, numpy as np
 import matplotlib.patches as mpatches
-from models import EN, RF, IMPORTANCE_NAMES
+from models import EN, RF, IMPORTANCE_NAMES, FEATURE_CLASS_NAMES
 sns.set_style('whitegrid')
 
 # Parse command-line arguments
@@ -79,7 +79,7 @@ plt.clf()
 var_importance = var_importance.reset_index()
 var_importance_name = IMPORTANCE_NAMES[model]
 var_importance = var_importance.rename(index=str, columns={"#Feature name": "Feature", "Score": var_importance_name})
-var_importance['Class'] = var_importance['Class'].map({'Blood': 'Circulating', 'Tumor': 'Tumor', 'Clinical': 'Clinical'})
+var_importance['Class'] = var_importance['Class'].map({fc.capitalize(): fcn for fc, fcn in FEATURE_CLASS_NAMES.items() })
 
 #
 classToColor = dict(zip(['Tumor', 'Circulating', 'Clinical'], sns.color_palette()[:3]))
