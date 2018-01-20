@@ -45,7 +45,7 @@ For further questions, please email [Max Leiserson](mailto:mdml@cs.umd.edu) and 
 
 ### References
 
-Mark DM Leiserson, Vasilis Syrgkanis, Amy Gilson, Miroslav Dudik, Dean F Bajorin, Dean F Bajorin, Samuel Funt, Alexandra Snyder, Lester Mackey. (2018) A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor. _In submission_ [[bioRxiv preprint]](https://www.biorxiv.org/content/early/2017/12/08/231316).
+Mark DM Leiserson, Vasilis Syrgkanis, Amy Gilson, Miroslav Dudik, Dean F Bajorin, Jonathan Rosenberg, Samuel Funt, Alexandra Snyder, Lester Mackey. (2018) A Multifactorial Model of T Cell Expansion and Durable Clinical Benefit in Response to a PD-L1 Inhibitor. _In submission_ [[bioRxiv preprint]](https://www.biorxiv.org/content/early/2017/12/08/231316).
 
 ### Figures
 
