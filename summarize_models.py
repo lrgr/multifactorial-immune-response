@@ -7,14 +7,14 @@ import sys, os, argparse, json, pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument('-rf', '--results_files', nargs='*', type=str, required=True)
 parser.add_argument('-of', '--output_file', type=str, required=True)
-parser.add_argument('-sfc', '--selected_feature_classes', type=str, nargs='*', required=True)
+parser.add_argument('-efc', '--excluded_feature_classes', type=str, nargs='*', required=True)
 args = parser.parse_args(sys.argv[1:])
 
-assert( len(args.results_files) == len(args.selected_feature_classes))
+assert( len(args.results_files) == len(args.excluded_feature_classes))
 
 # Load the results files to construct dataframe
 items = []
-for result_file, feature_class in zip(args.results_files, args.selected_feature_classes):
+for result_file, excluded_feature_class in zip(args.results_files, args.excluded_feature_classes):
     with open(result_file, 'r') as IN:
         obj = json.load(IN)
         mses = obj['mse']
@@ -22,7 +22,7 @@ for result_file, feature_class in zip(args.results_files, args.selected_feature_
         var_explained = obj['variance_explained']
         maes = obj['mae']
         n_features = len(obj['training_features'])
-        item = { "Excluded Feature Classes": feature_class.capitalize(), "No. features": n_features }
+        item = { "Excluded Feature Classes": excluded_feature_class.capitalize(), "No. features": n_features }
         for metric_name, metric in zip(['mae', 'mse', 'rmse'], [mses, rmses, maes]):
             item[metric_name.upper()] = metric['held-out']
         item['Variance explained'] = var_explained

@@ -16,7 +16,14 @@ install:
   - conda env create -f environment.yml
   - source activate multifactorial-immune-response-env
 
-script: travis_wait 120 snakemake all -j 2
+env:
+  - RULE=process_data
+  - RULE=train_model
+  - RULE=biomarkers_and_dcb
+  - RULE=reduce_permutation_test
+  - RULE=plot
+
+script: travis_wait 20 snakemake $RULE -j 2
 
 deploy:
   provider: pages
