@@ -16,7 +16,7 @@ install:
   - conda env create -f environment.yml
   - source activate multifactorial-immune-response-env
 
-script: travis_wait 120 snakemake all
+script: travis_wait 120 snakemake all -j 2
 
 deploy:
   provider: pages
