@@ -1,6 +1,6 @@
 from os.path import join
 from models import FEATURE_CLASSES
-configfile: 'configs/default.yml'
+configfile: 'configs/test.yml'
 
 ################################################################################
 # SETTINGS, FILES, AND DIRECTORIES
@@ -11,6 +11,8 @@ RAW_DATA_DIR = join(DATA_DIR, 'raw')
 OUTPUT_DIR = 'output/%s' % config['model']
 FIGURES_DIR = join(OUTPUT_DIR, 'figs')
 PERMUTATION_DIR = join(OUTPUT_DIR, 'permutations')
+OUTCOMES_PERMUTATION_DIR = join(PERMUTATION_DIR, 'outcomes')
+FEATURES_PERMUTATION_DIR = join(PERMUTATION_DIR, 'features')
 MODELS_DIR = join(OUTPUT_DIR, 'models')
 
 # Data files
@@ -35,8 +37,12 @@ MODEL_SUMMARY = join(OUTPUT_DIR, '%s-models-summary.tsv' % config['model'])
 
 BIOMARKER_DCB_PLOT_OUTPUT = join(OUTPUT_DIR, '%s-biomarker-dcb-plot-data.json' % config['model'])
 
-PERMUTATION_TEST_PREFIX = join(PERMUTATION_DIR, '%s-permuted-results' % config['model'])
-PERMUTATION_TEST_RESULTS = join(OUTPUT_DIR, '%s-permutation-test-results.json' % config['model'])
+OUTCOME_PERMUTATION_TEST_PREFIX = join(OUTCOMES_PERMUTATION_DIR, '%s-outcome-permuted-results' % config['model'])
+FEATURE_PERMUTATION_TEST_PREFIX = join(FEATURES_PERMUTATION_DIR, '%s-feature-permuted-results' % config['model'])
+OUTCOME_PERMUTATION_TEST_RESULTS = join(PERMUTATION_DIR, '%s-outcome-permutation-test-results.json' % config['model'])
+FEATURE_PERMUTATION_TEST_RESULTS_PREFIX = join(PERMUTATION_DIR, '%s-feature-permutation-test' % config['model'])
+
+PERMUTATION_TEST_SUMMARY = join(OUTPUT_DIR, '%s-permutation-test-summary.tsv' % config['model'])
 
 # Plots
 FIGS_PREFIX = join(FIGURES_DIR, 'fig')
@@ -129,8 +135,8 @@ rule summarize_models:
     output:
         MODEL_SUMMARY
     shell:
-        'python summarize_models.py -rf {input.all_features} {input.excluding_features} '\
-        '-of {output} -efc none {params.feature_classes}'
+        'python summarize.py -of {output} models -efc none {params.feature_classes} '\
+        '-rf {input.all_features} {input.excluding_features}'
 
 # Do follow up analysis
 rule biomarkers_and_dcb:
@@ -142,7 +148,7 @@ rule biomarkers_and_dcb:
     shell:
         'python associate_biomarkers_with_dcb.py -ff {input.features} -rf {input.results} -o {output}'
 
-rule map_permutation_test:
+rule map_outcome_permutation_test:
     input:
         features=PROCESSED_FEATURES,
         outcomes=PROCESSED_OUTCOMES,
@@ -155,29 +161,69 @@ rule map_permutation_test:
         tol=config['tol']
     threads: config['n_jobs']
     output:
-        "%s-{index}.json" % PERMUTATION_TEST_PREFIX
+        "%s-{index}.json" % OUTCOME_PERMUTATION_TEST_PREFIX
     shell:
-        'python permutation_test.py -of {output} map -ff {input.features} '\
+        'python permutation_test.py -of {output} -tt outcome map -ff {input.features} '\
         '-fcf {input.feature_classes} -ocf {input.outcomes}  '\
         '-nj {params.n_jobs} -ers {params.random_seed} -prs {params.random_seed}'\
         ' -m {params.model} -mi {params.max_iter} -t {params.tol}'
 
-rule reduce_permutation_test:
+rule reduce_outcome_permutation_test:
     input:
-        permutation_test_files=expand("%s-{index}.json" % PERMUTATION_TEST_PREFIX, index=range(1, config['n_permutations']+1)),
+        permutation_test_files=expand("%s-{index}.json" % OUTCOME_PERMUTATION_TEST_PREFIX, index=range(1, config['n_permutations']+1)),
         results_file=MODEL_RESULTS
     output:
-        PERMUTATION_TEST_RESULTS
+        OUTCOME_PERMUTATION_TEST_RESULTS
     shell:
-        'python permutation_test.py -of {output} reduce '\
+        'python permutation_test.py -of {output} -tt outcome reduce '\
         '-rf {input.results_file} -pf {input.permutation_test_files}'
+
+rule map_feature_permutation_test:
+    input:
+        features=PROCESSED_FEATURES,
+        outcomes=PROCESSED_OUTCOMES,
+        feature_classes=PROCESSED_FEATURE_CLASSES
+    params:
+        random_seed=lambda wildcards, output: config['random_seed'] + int(wildcards['index']),
+        n_jobs=config['n_jobs'],
+        model=config['model'],
+        max_iter=config['max_iter'],
+        tol=config['tol']
+    threads: config['n_jobs']
+    output:
+        "%s-{feature_class}-{index}.json" % FEATURE_PERMUTATION_TEST_PREFIX
+    shell:
+        'python permutation_test.py -of {output} -tt feature map -ff {input.features} '\
+        '-fcf {input.feature_classes} -ocf {input.outcomes} -fc {wildcards.feature_class} '\
+        '-nj {params.n_jobs} -ers {params.random_seed} -prs {params.random_seed}'\
+        ' -m {params.model} -mi {params.max_iter} -t {params.tol}'
+
+rule reduce_feature_permutation_test:
+    input:
+        permutation_test_files=expand("%s-{{feature_class}}-{index}.json" % FEATURE_PERMUTATION_TEST_PREFIX, index=range(1, config['n_permutations']+1)),
+        results_file=MODEL_RESULTS
+    output:
+        '%s-{feature_class}-results.json' % FEATURE_PERMUTATION_TEST_RESULTS_PREFIX
+    shell:
+        'python permutation_test.py -of {output} -tt feature reduce '\
+        '-rf {input.results_file} -pf {input.permutation_test_files}'
+
+rule summarize_permutation_test:
+    input:
+        feature=expand('%s-{feature_class}-results.json' % FEATURE_PERMUTATION_TEST_RESULTS_PREFIX, feature_class=FEATURE_CLASSES),
+        outcome=OUTCOME_PERMUTATION_TEST_RESULTS
+    output:
+        PERMUTATION_TEST_SUMMARY
+    shell:
+        'python summarize.py -o {output} permutation '\
+        '-i {input.feature} {input.outcome}'
 
 # Make plots
 rule plot:
     input:
         biomarkers=BIOMARKER_DCB_PLOT_OUTPUT,
         results=MODEL_RESULTS,
-        permutation_test_results=PERMUTATION_TEST_RESULTS,
+        permutation_test_results=OUTCOME_PERMUTATION_TEST_RESULTS,
         coefficients=MODEL_COEFFICIENTS
     params:
         ext=config['figure_format']
@@ -196,4 +242,5 @@ rule all:
         FIG1,
         FIG2,
         FIG3,
-        MODEL_SUMMARY
+        MODEL_SUMMARY,
+        PERMUTATION_TEST_SUMMARY
