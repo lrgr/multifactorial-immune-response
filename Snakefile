@@ -1,6 +1,6 @@
 from os.path import join
 from models import FEATURE_CLASSES
-configfile: 'configs/test.yml'
+configfile: 'configs/default.yml'
 
 ################################################################################
 # SETTINGS, FILES, AND DIRECTORIES
@@ -135,7 +135,7 @@ rule summarize_models:
     output:
         MODEL_SUMMARY
     shell:
-        'python summarize.py -of {output} models -efc none {params.feature_classes} '\
+        'python summarize.py -of {output} model -efc none {params.feature_classes} '\
         '-rf {input.all_features} {input.excluding_features}'
 
 # Do follow up analysis

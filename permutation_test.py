@@ -13,89 +13,6 @@ FEATURE_TEST = 'feature'
 OUTCOME_TEST = 'outcome'
 
 ################################################################################
-# FEATURE PERMUTATION TEST
-################################################################################
-def shuffle_with_feat_mask(X, feat_mask, random_state):
-    """Auxiliary function for feature_permutation_test"""
-    indices = random_state.permutation(X.shape[0])
-    X_perm = np.copy(X)
-    X_feats = X[:, feat_mask]
-    X_perm[:, feat_mask] = X_feats[indices, :]
-    return X_perm
-
-def feature_permutation_test(estimator, X, y, feat_mask, random_state=0,
-                             cv=None, scoring=None, verbosity=logging.INFO):
-    # Create logger if missing
-    if logger is None:
-        logger = getLogger(verbosity)
-
-    # Sanity checking
-    scorer = check_scoring(estimator, scoring=scoring)
-    random_state = check_random_state(random_state)
-
-    # Shuffle data
-    X_perm = shuffle_with_feat_mask(X, feat_mask, random_state)
-
-    # Fit model on permuted data
-    logger.info("Scoring permutation.")
-    avg_score = []
-    for train, test in cv.split(X, y):
-        X_train, y_train = _safe_split(estimator, X_perm, y, train)
-        X_test, y_test = _safe_split(estimator, X_perm, y, test, train)
-        estimator.fit(X_train, y_train)
-        avg_score.append(scorer(estimator, X_test, y_test))
-
-    perm_score = np.mean(avg_score)
-    logger.info("Permutation score: {}".format(perm_score))
-    return perm_score
-
-def map_feature_permutation_test(args):
-    # Set up logger
-    logger = getLogger(args.verbosity)
-
-    # Additional argument checking
-    if len(args.feature_classes) == 0:
-        logger.error('Must provide a feature class for feature permutation test')
-        assert False
-
-    # Load required modules
-    from sklearn.model_selection import LeaveOneOut, GridSearchCV, cross_val_predict
-    from metrics import compute_metrics
-
-    # Load the input data
-    X = pd.read_csv(args.feature_file, index_col=0, sep='\t')
-    y = pd.read_csv(args.outcome_file, index_col=0, sep='\t')
-    feature_classes = pd.read_csv(args.feature_class_file, index_col=0, sep='\t')
-
-    # Align the features and outcomes
-    patients = X.index
-    X = X.reindex(index = patients)
-    y = y.reindex(index = patients)
-    outcome_name = y.columns[0]
-
-    # In this case, we use all columns for training (just shuffle a subset)
-    training_cols = feature_classes['Class'].tolist()
-    feat_mask = feature_classes[training_cols].isin(args.feat_groups).as_matrix()
-
-    ############################################################################
-    # RUN PERMUTATION TEST
-    ############################################################################
-    #Initialize model
-    pipeline, gscv = init_model(args.model, args.n_jobs, args.estimator_random_seed, args.max_iter, args.tol)
-
-    # Convert dataframes to matrices to avoid dataframe splitting error
-    logger.info("Running permutation test on features: {}".format(training_cols[feat_mask]))
-    perm_score = feature_permutation_test(gscv, X.loc[:,training_cols].as_matrix(),
-        y.as_matrix(), feat_mask, cv=outer_cv, n_permutations=n_permutations,
-        n_jobs=args.n_jobs, random_state=perm_seed, verbose=3,
-        scoring = 'neg_mean_squared_error')
-
-    return perm_score
-
-def reduce_feature_permutation_test(args):
-    return
-
-################################################################################
 # OUTCOME PERMUTATION TEST
 ################################################################################
 # Generate permuted data and train a model
@@ -133,6 +50,7 @@ def map_permutation_test(args):
         feature_class_names = set(map(str.capitalize, set(FEATURE_CLASSES) - set(args.feature_classes)))
         training_cols = feature_classes.loc[feature_classes['Class'].isin(feature_class_names)].index.tolist()
         y[outcome_name] = np.random.permutation(y[outcome_name])
+        
     else:
         raise NotImplementedError('Test type "%s" not implemented.' % args.test_type)
 
@@ -197,7 +115,7 @@ def reduce_permutation_test(args):
     n_permutations = len(permutation_scores)
 
     # Compute P-value
-    pvalue = (1. + sum(1. for s in permutation_scores if s >= true_score))/(n_permutations + 1.)
+    pvalue = (1. + sum(1. for s in permutation_scores if s <= true_score))/(n_permutations + 1.)
     logger.info('- No. permutations: %s' % n_permutations)
     logger.info('- True score: %.5f' % true_score)
     logger.info('- P-value: p < %s' % pvalue)
