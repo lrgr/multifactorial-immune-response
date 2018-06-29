@@ -1,0 +1,9 @@
+model: 'lr'
+n_permutations: 0
+random_seed: 12345
+n_jobs: 4
+figure_format: 'pdf'
+max_iter: 10000
+tol: 1e-4
+outcome: 'benefit'
+log_outcome: false

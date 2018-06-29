@@ -19,6 +19,8 @@ parser.add_argument('-fcf', '--feature_class_file', type=str, required=True)
 # 2) Feature/Outcome parameters
 parser.add_argument('-on', '--outcome_name', type=str, required=False,
     default='N Expanded Clones that were TILs A->B')
+parser.add_argument('--no-log-outcome', action='store_true', default=False,
+                    help='Do not place outcomes on a log scale')
 parser.add_argument('-fn', '--feature_names', type=str, required=False,
     nargs='*', default=['Age', 'Albumin < 4',
             'Time since last chemotherapy','missense_snv_count',
@@ -135,7 +137,8 @@ X = X.drop(patients_missing_outcomes)
 y = y.drop(patients_missing_outcomes)
 
 # Place outcome on logarithmic scale
-y = np.log(y)
+if not args.no_log_outcome:
+    y = np.log(y)
 
 # Print more summary statistics
 logger.info('Final feature matrix')

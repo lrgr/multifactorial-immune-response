@@ -6,21 +6,24 @@
 # Load required modules
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer
-from sklearn.linear_model import ElasticNetCV, ElasticNet
+from sklearn.linear_model import ElasticNetCV, ElasticNet, LogisticRegression, LogisticRegressionCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import LeaveOneOut, KFold, GridSearchCV, LeaveOneOut
 
 # Constants
 EN = 'en'
 RF = 'rf'
-MODEL_NAMES = [ EN, RF ]
+LR = 'lr'
+MODEL_NAMES = [ EN, RF, LR ]
 MODEL_TO_NAME = {
     EN: 'ElasticNet',
-    RF: 'RandomForest'
+    RF: 'RandomForest',
+    LR: 'LogisticRegression'
 }
 IMPORTANCE_NAMES = {
     EN: 'Learned coefficient',
-    RF: 'Variable importance'
+    RF: 'Variable importance',
+    LR: 'Learned coefficient'
 }
 
 CLINICAL = 'clinical'
@@ -42,7 +45,7 @@ def init_model(model_name, n_jobs, random_seed, max_iter=None, tol=None):
     pipeline.named_steps['estimator'].set_params(n_jobs=n_jobs)
     pipeline.named_steps['estimator'].set_params(random_state=random_seed)
 
-    if model_name == EN:
+    if model_name == EN or model_name == LR:
         pipeline.named_steps['estimator'].set_params(max_iter=max_iter)
         pipeline.named_steps['estimator'].set_params(tol=tol)
 
@@ -51,8 +54,8 @@ def init_model(model_name, n_jobs, random_seed, max_iter=None, tol=None):
         # Perform parameter selection using inner loop of CV
         inner_cv = LeaveOneOut()
         gscv = GridSearchCV(estimator=pipelines[key], param_grid=param_grids[key],
-                                cv=inner_cv,
-                                scoring = 'neg_mean_squared_error')
+                            cv=inner_cv,
+                            scoring = 'neg_mean_squared_error')
     else:
         gscv = pipeline
 
@@ -84,14 +87,33 @@ rf_pipeline = Pipeline([("imputer", Imputer(strategy="median")),
                           ("estimator", rf_estimator)])
 
 ################################################################################
+# LOGISTIC REGRESSION
+################################################################################
+# Logistic regression with LOOCV
+lr_inner_cv = LeaveOneOut()
+lr_seed = 12345
+lr_penalty = 'l2'
+lr_estimator = LogisticRegressionCV(penalty=lr_penalty, Cs=8, cv = lr_inner_cv, 
+                                    max_iter = 1000000, tol=1e-4,
+                                    random_state=lr_seed,
+                                    scoring='accuracy')
+lr_param_grid = None
+
+# Build pipeline
+lr_pipeline = Pipeline([("imputer", Imputer(strategy="median")),
+                        ("estimator", lr_estimator)])
+
+################################################################################
 # PIPELINES
 ################################################################################
 PIPELINES = {
     EN: en_pipeline,
-    RF: rf_pipeline
+    RF: rf_pipeline,
+    LR: lr_pipeline
 }
 
 PARAM_GRIDS = {
     EN: en_param_grid,
-    RF: rf_param_grid
+    RF: rf_param_grid,
+    LR: lr_param_grid
 }
